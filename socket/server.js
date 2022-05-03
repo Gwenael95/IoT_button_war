@@ -4,6 +4,7 @@ const C = xbee_api.constants;
 //let storage = require("./storage")
 require('dotenv').config()
 const frames = require("./frames");
+const puces = require("./puce_gisbee");
 
 
 const SERIAL_PORT = process.env.SERIAL_PORT;
@@ -71,14 +72,21 @@ xbeeAPI.parser.on("data", function (frame) {
   } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
 
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX")
-    console.log(frame.analogSamples.AD0)
+    console.log(frame.digitalSamples, frame.remote64)
+    console.log(frame.digitalSamples.DIO3)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
-    if(frame.commandData === "D1"){
-      frames.remoteOffRailas
+    if(frame.remote64 === puces.gwen){
+      if(frame.digitalSamples.DIO3 === 0){
+        console.log("frame on")
+        xbeeAPI.builder.write(frames.remoteOnRailas)
+      }
+      else{
+        console.log("frame off")
+        xbeeAPI.builder.write(frames.remoteOffRailas)
+
+      }
     }
-    else{
-      frames.remoteOnRailas
-    }
+
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
     console.log("REMOTE_COMMAND_RESPONSE")
