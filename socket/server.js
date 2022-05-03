@@ -4,7 +4,7 @@ const C = xbee_api.constants;
 //let storage = require("./storage")
 require('dotenv').config()
 const frames = require("./frames");
-const puces = require("./puce_gisbee");
+const puces = require("./puce_zigbee");
 
 
 const SERIAL_PORT = process.env.SERIAL_PORT;

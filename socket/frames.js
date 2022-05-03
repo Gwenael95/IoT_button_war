@@ -1,5 +1,5 @@
 const xbee_api = require("xbee-api");
-const puces = require("./puce_gisbee");
+const puces = require("./puce_zigbee");
 const C = xbee_api.constants;
 
 remoteOffRailas = {
