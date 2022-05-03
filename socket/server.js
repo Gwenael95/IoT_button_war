@@ -3,6 +3,7 @@ let xbee_api = require('xbee-api');
 const C = xbee_api.constants;
 //let storage = require("./storage")
 require('dotenv').config()
+const frames = require("./frames");
 
 
 const SERIAL_PORT = process.env.SERIAL_PORT;
@@ -32,19 +33,21 @@ serialport.on("open", function () {
 
   xbeeAPI.builder.write(frame_obj);
 
-  frame_obj = { // AT Request to be sent
-    type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
-    destination64: "FFFFFFFFFFFFFFFF",
-    command: "NI",
-    commandParameter: [],
-  };
-  xbeeAPI.builder.write(frame_obj);
+  // frame_obj = { // AT Request to be sent
+  //   type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
+  //   destination64: "FFFFFFFFFFFFFFFF",
+  //   command: "NI",
+  //   commandParameter: [],
+  // };
+  // xbeeAPI.builder.write(frame_obj);
 
 });
 
 // All frames parsed by the XBee will be emitted here
 
 // //storage.listSensors().then((sensors) => sensors.forEach((sensor) => console.log(sensor.data())))
+
+
 
 xbeeAPI.parser.on("data", function (frame) {
 
@@ -70,6 +73,12 @@ xbeeAPI.parser.on("data", function (frame) {
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX")
     console.log(frame.analogSamples.AD0)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
+    if(frame.commandData === "D1"){
+      frames.remoteOffRailas
+    }
+    else{
+      frames.remoteOnRailas
+    }
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
     console.log("REMOTE_COMMAND_RESPONSE")
