@@ -1,14 +1,14 @@
-var SerialPort = require('serialport');
-var xbee_api = require('xbee-api');
-var C = xbee_api.constants;
-//var storage = require("./storage")
+let SerialPort = require('serialport');
+let xbee_api = require('xbee-api');
+const C = xbee_api.constants;
+//let storage = require("./storage")
 require('dotenv').config()
 
 
 const SERIAL_PORT = process.env.SERIAL_PORT;
 
-var xbeeAPI = new xbee_api.XBeeAPI({
-  api_mode: 2
+let xbeeAPI = new xbee_api.XBeeAPI({
+  api_mode: parseInt(process.env.API_MODE) || 1
 });
 
 let serialport = new SerialPort(SERIAL_PORT, {
@@ -23,11 +23,12 @@ serialport.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
 
 serialport.on("open", function () {
-  var frame_obj = { // AT Request to be sent
+  let frame_obj = { // AT Request to be sent
     type: C.FRAME_TYPE.AT_COMMAND,
     command: "NI",
     commandParameter: [],
   };
+  console.log("STARTED", frame_obj)
 
   xbeeAPI.builder.write(frame_obj);
 
@@ -47,6 +48,7 @@ serialport.on("open", function () {
 
 xbeeAPI.parser.on("data", function (frame) {
 
+  console.log("i receive data")
   //on new device is joined, register it
 
   //on packet received, dispatch event
