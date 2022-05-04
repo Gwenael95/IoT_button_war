@@ -4,6 +4,25 @@ function getRandInteger(min, max) {
     return Math.floor(Math.random() * (max - min + 1) ) + min;
 }
 
+//region array
+function getDiffInArray(arr1, arr2){
+    return arr1.filter(x => !arr2.includes(x)) .concat(arr2.filter(x => !arr1.includes(x)))
+}
+function arrayExcludingVal(arr1, value){
+    return arr1.filter(x => value!==x)
+}
+
+const shuffleArray = array => {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array
+}
+//endregion
+
 function whichIs0InObject(obj){
     const objKeys = Object.keys(obj);
     let pressedArr = [];
@@ -20,11 +39,19 @@ function whichIs0InObject(obj){
 /**
  *
  * @param xbeeAPI {XBeeAPI}
- * @param frame
+ * @param frame {object}
  * @param controller {Controller} :
+ * @param currGame {Game}
+ * @param framesFuncBasename {string}
  */
-function handleControllerByFrame(controller, xbeeAPI,  frame){
+function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, framesFuncBasename){
     if(frame.remote64 === controller.dest64){
+        const lightOn = currGame.getLightOn();
+        if(lightOn === null){
+            console.log("END OF THE GAME")
+            return null
+        }
+
         //region get the last button clicked
         const keysPressed = whichIs0InObject(frame.digitalSamples);
         const inputChanged = controller.whichButtonJustChange(keysPressed) // it doesn't regard if is pressed or unpressed
@@ -33,16 +60,25 @@ function handleControllerByFrame(controller, xbeeAPI,  frame){
         //endregion
 
         if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
-            console.log(inputChanged, "is pressed", controller.indexLastInputChanged)
-            //xbeeAPI.builder.write(frames["ledOff_" + controller.indexLastInputChanged])
-            xbeeAPI.builder.write(frames["ledOff_" + controller.indexLastInputChanged])
-
+            console.log(inputChanged, "is pressed", controller.indexLastInputChanged, " current light on=", lightOn, " --- last changed = ", controller.indexLastInputChanged)
+            //xbeeAPI.builder.write(frames[(framesFuncBasename) + controller.indexLastInputChanged])
+            if(lightOn === controller.indexLastInputChanged){
+                console.log("the light was on, +1 pt")
+            }
+            else{
+                console.log("the light was off, -3 pts")
+            }
             //xbeeAPI.builder.write(frames["isLedOn_" + controller.indexLastInputChanged]) // is that usefull to check if switch on, could be saved in var
         }
     }
 }
 
 //region deprecated, not useful anymore
+
+function getInterInArray(arr1, arr2){
+    return arr1.filter(x => arr2.includes(x));
+}
+
 function objectContainsKeys(obj, keys){
     const objKeys = Object.keys(obj);
     let boolArr = [];
@@ -51,33 +87,8 @@ function objectContainsKeys(obj, keys){
     })
     return !boolArr.includes(false)
 }
-
-/**
- *
- * @param buttonName string : like D0, D1
- */
-function giveSampleByButton(buttonName){
-    switch (buttonName){
-        case "D0":
-            return "DIO0"
-        case "D1":
-            return "DIO1"
-        case "D2":
-            return "DIO2"
-        case "D3":
-            return "DIO3"
-        case "D4":
-            return "DIO4"
-        default:
-            return "DIO0"
-    }
-}
-function giveSampleButtonArr(buttonNameList){
-    let arr = []
-    buttonNameList.forEach(el=>{
-        arr.push(giveSampleByButton(el))
-    })
-    return arr
-}
 //endregion
-module.exports = { objectContainsKeys, whichIs0InObject, giveSampleByButton, giveSampleButtonArr, handleControllerByFrame};
+module.exports = { objectContainsKeys, whichIs0InObject,
+    handleControllerByFrame, getRandInteger,
+    getDiffInArray, shuffleArray,
+    getInterInArray, arrayExcludingVal};

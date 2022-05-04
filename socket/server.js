@@ -5,6 +5,7 @@ require('dotenv').config()
 const frames = require("./frames");
 const puces = require("./puce_zigbee");
 const {handleControllerByFrame} = require("./helpers");
+const {Game} = require("./game");
 
 //region init
 const C = xbee_api.constants;
@@ -52,6 +53,30 @@ serialport.on("open", function () {
 
 // //storage.listSensors().then((sensors) => sensors.forEach((sensor) => console.log(sensor.data())))
 
+currGame = new Game()
+console.log(currGame.randomListLed)
+/*currGame.randomListLed.forEach((el, index)=>{
+  const func = () => {
+    console.log("###### " , el.ledIndex, " is off", "that was element", index)
+    xbeeAPI.builder.write(frames["ledOn_" + el.ledIndex])
+    el.ledOffIndex.forEach(buttonId=>{
+      xbeeAPI.builder.write(frames["ledOff_" + buttonId])
+    })
+  }
+  setTimeout(func, el.time*1000)
+})*/
+for(let i=0; i<currGame.randomListLed.length ;i++){
+  const el = currGame.randomListLed[i]
+  const func = () => {
+    console.log("###### " , el.ledIndex, " is off", "that was element", i)
+    xbeeAPI.builder.write(frames["ledOn_" + el.ledIndex])
+    el.ledOffIndex.forEach(buttonId=>{
+      xbeeAPI.builder.write(frames["ledOff_" + buttonId])
+    })
+  }
+  setTimeout(func, el.time*1000)
+}
+
 xbeeAPI.parser.on("data", function (frame) {
   //on new device is joined, register it
 
@@ -73,8 +98,8 @@ xbeeAPI.parser.on("data", function (frame) {
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX from ", frame.remote64, "with PIN = ", frame.digitalSamples)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
 
-    handleControllerByFrame(puces.controller1, xbeeAPI, frame)
-    handleControllerByFrame(puces.controller2, xbeeAPI, frame)
+    handleControllerByFrame(puces.controller1, xbeeAPI, frame, currGame, "ledOff_")
+    handleControllerByFrame(puces.controller2, xbeeAPI, frame, currGame, "ledOn_")
    /*
       US 4 lessons iot
       if(frame.digitalSamples.DIO3 === 0){

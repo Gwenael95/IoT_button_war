@@ -1,3 +1,4 @@
+const {getDiffInArray} = require("./helpers")
 
 class Controller {
     constructor(dest64, dest16, button0, button1, button2) {
@@ -18,7 +19,8 @@ class Controller {
         this.indexLastInputChanged = this.buttonList.indexOf(newButton)
     }
     whichButtonJustChange (newPressedList){
-        const button = this.pressedInputs.filter(x => !newPressedList.includes(x)) .concat(newPressedList.filter(x => !this.pressedInputs.includes(x)))[0]
+        //const button = this.pressedInputs.filter(x => !newPressedList.includes(x)) .concat(newPressedList.filter(x => !this.pressedInputs.includes(x)))[0]
+        const button = getDiffInArray(this.pressedInputs, newPressedList)[0]
         this.setJustChangeButton(button)
         return button;
     }
