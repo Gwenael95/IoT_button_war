@@ -1,5 +1,3 @@
-const frames = require("./frames");
-
 function getRandInteger(min, max) {
     return Math.floor(Math.random() * (max - min + 1) ) + min;
 }
@@ -35,7 +33,7 @@ function whichIs0InObject(obj){
     return pressedArr
 }
 
-
+//region xbee commands
 /**
  *
  * @param xbeeAPI {XBeeAPI}
@@ -61,7 +59,7 @@ function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, framesFu
 
         if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
             console.log(inputChanged, "is pressed", controller.indexLastInputChanged, " current light on=", lightOn, " --- last changed = ", controller.indexLastInputChanged)
-            //xbeeAPI.builder.write(frames[(framesFuncBasename) + controller.indexLastInputChanged])
+            //xbeeAPI.builder.write(frames[(framesFuncBasename) + controller.indexLastInputChanged]) // then add frames as param
             if(lightOn === controller.indexLastInputChanged){
                 console.log("the light was on, +1 pt")
             }
@@ -72,6 +70,37 @@ function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, framesFu
         }
     }
 }
+
+/**
+ *
+ * @param currGame {Game}
+ * @param xbeeAPI {XBeeAPI}
+ */
+function gameStart(currGame, xbeeAPI, frames){
+    for(let i=0; i<currGame.randomListLed.length ;i++){
+        const el = currGame.randomListLed[i]
+        console.log(el)
+        if(el.time > currGame.duration){
+            const func = () => {
+                currGame.LED_INDEXES.forEach(buttonId=>{
+                    xbeeAPI.builder.write(frames["ledOn_" + buttonId])
+                })
+            }
+            setTimeout(func, currGame.duration*1000)
+
+            break
+        }
+        const func = () => {
+            console.log("###### " , el.ledIndex, " is off", "that was element", i, frames["ledOn_" + el.ledIndex], frames)
+            xbeeAPI.builder.write(frames["ledOn_" + el.ledIndex])
+            el.ledOffIndex.forEach(buttonId=>{
+                xbeeAPI.builder.write(frames["ledOff_" + buttonId])
+            })
+        }
+        setTimeout(func, el.time*1000)
+    }
+}
+//endregion
 
 //region deprecated, not useful anymore
 
@@ -91,4 +120,5 @@ function objectContainsKeys(obj, keys){
 module.exports = { objectContainsKeys, whichIs0InObject,
     handleControllerByFrame, getRandInteger,
     getDiffInArray, shuffleArray,
-    getInterInArray, arrayExcludingVal};
+    getInterInArray, arrayExcludingVal,
+    gameStart};

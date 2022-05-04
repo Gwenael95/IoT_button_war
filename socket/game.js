@@ -1,7 +1,8 @@
 const {getRandInteger, arrayExcludingVal, shuffleArray} = require("./helpers")
 
 class Game {
-    MAX_BETWEEN_LED_CHANGE = 12
+    MIN_BETWEEN_LED_CHANGE = 3
+    MAX_BETWEEN_LED_CHANGE = 7
     LED_INDEXES = [0, 1, 2]
 
     constructor() {
@@ -20,7 +21,7 @@ class Game {
         while(nbSec < this.duration + this.MAX_BETWEEN_LED_CHANGE){
             currentButton = shuffleArray(arrayExcludingVal(this.LED_INDEXES, currentButton))[0] // random led index, without repetition
             this.randomListLed.push({ledIndex:currentButton, time:nbSec, ledOffIndex:arrayExcludingVal(this.LED_INDEXES, currentButton)})
-            nbSec += getRandInteger(4, this.MAX_BETWEEN_LED_CHANGE)
+            nbSec += getRandInteger(this.MIN_BETWEEN_LED_CHANGE, this.MAX_BETWEEN_LED_CHANGE)
         }
     }
 
@@ -47,7 +48,7 @@ class Game {
             const currentDate = new Date();
             this.startTimestamp = currentDate.getTime();
             console.log(this.startTimestamp)
-            setTimeout(()=>{console.log("################# END OF THE GAME #############@")}, this.duration*1000)
+            setTimeout(()=>{console.log("################# END OF THE GAME #############")}, this.duration*1000)
         }
     }
 

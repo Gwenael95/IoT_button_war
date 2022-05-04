@@ -4,7 +4,7 @@ let xbee_api = require('xbee-api');
 require('dotenv').config()
 const frames = require("./frames");
 const puces = require("./puce_zigbee");
-const {handleControllerByFrame} = require("./helpers");
+const {handleControllerByFrame, gameStart} = require("./helpers");
 const {Game} = require("./game");
 
 //region init
@@ -25,7 +25,6 @@ let serialport = new SerialPort(SERIAL_PORT, {
 serialport.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
 //endregion
-
 
 //region on start server
 serialport.on("open", function () {
@@ -55,27 +54,7 @@ serialport.on("open", function () {
 
 currGame = new Game()
 console.log(currGame.randomListLed)
-/*currGame.randomListLed.forEach((el, index)=>{
-  const func = () => {
-    console.log("###### " , el.ledIndex, " is off", "that was element", index)
-    xbeeAPI.builder.write(frames["ledOn_" + el.ledIndex])
-    el.ledOffIndex.forEach(buttonId=>{
-      xbeeAPI.builder.write(frames["ledOff_" + buttonId])
-    })
-  }
-  setTimeout(func, el.time*1000)
-})*/
-for(let i=0; i<currGame.randomListLed.length ;i++){
-  const el = currGame.randomListLed[i]
-  const func = () => {
-    console.log("###### " , el.ledIndex, " is off", "that was element", i)
-    xbeeAPI.builder.write(frames["ledOn_" + el.ledIndex])
-    el.ledOffIndex.forEach(buttonId=>{
-      xbeeAPI.builder.write(frames["ledOff_" + buttonId])
-    })
-  }
-  setTimeout(func, el.time*1000)
-}
+gameStart(currGame, xbeeAPI, frames)
 
 xbeeAPI.parser.on("data", function (frame) {
   //on new device is joined, register it
