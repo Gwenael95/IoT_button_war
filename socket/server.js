@@ -55,7 +55,6 @@ serialport.on("open", function () {
 
 
 xbeeAPI.parser.on("data", function (frame) {
-  console.log("i receive data")
   //on new device is joined, register it
 
   //on packet received, dispatch event
@@ -75,17 +74,19 @@ xbeeAPI.parser.on("data", function (frame) {
   } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX from ", frame.remote64, "with PIN = ", frame.digitalSamples)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
+
     if(frame.remote64 === puces.controller1.dest64){
       //region get the last button clicked
       const keysPressed = whichIs0InObject(frame.digitalSamples);
       const inputChanged = controller1.whichButtonJustChange(keysPressed) // it doesn't regard if is pressed or unpressed
       controller1.setPressed(keysPressed)
-      console.log("KEY pressed = ", inputChanged , ". list of buttons = ", [controller1.button0, controller1.button1, controller1.button2, ])
+      console.log("KEY changing = ", inputChanged)
       //endregion
 
       if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
          //besoin d'associer une lumiere avec un button
-        console.log(inputChanged, " is pressed")
+        console.log(inputChanged, "is pressed", puces.controller1.indexLastInputChanged)
+        console.log(frames["isLedOn_" + puces.controller1.indexLastInputChanged])
       }
 
       /*
