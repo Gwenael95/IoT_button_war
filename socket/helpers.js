@@ -60,12 +60,7 @@ function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, framesFu
         if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
             console.log(inputChanged, "is pressed", controller.indexLastInputChanged, " current light on=", lightOn, " --- last changed = ", controller.indexLastInputChanged)
             //xbeeAPI.builder.write(frames[(framesFuncBasename) + controller.indexLastInputChanged]) // then add frames as param
-            if(lightOn === controller.indexLastInputChanged){
-                console.log("the light was on, +1 pt")
-            }
-            else{
-                console.log("the light was off, -3 pts")
-            }
+            currGame.setScore(controller, lightOn === controller.indexLastInputChanged)
             //xbeeAPI.builder.write(frames["isLedOn_" + controller.indexLastInputChanged]) // is that usefull to check if switch on, could be saved in var
         }
     }

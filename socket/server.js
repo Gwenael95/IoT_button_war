@@ -51,7 +51,7 @@ serialport.on("open", function () {
 // All frames parsed by the XBee will be emitted here
 
 
-currGame = new Game()
+currGame = new Game([puces.controller1, puces.controller2])
 console.log(currGame.randomListLed)
 gameStart(currGame, xbeeAPI, frames) // encore des soucis entre qui est la lampe vs bouton
 
