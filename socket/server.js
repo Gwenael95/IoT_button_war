@@ -4,6 +4,8 @@ let xbee_api = require('xbee-api');
 require('dotenv').config()
 const frames = require("./frames");
 const puces = require("./puce_zigbee");
+const {whichIs0InObject} = require("./helpers");
+const {controller1} = require("./puce_zigbee");
 
 //region init
 const C = xbee_api.constants;
@@ -24,6 +26,7 @@ serialport.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
 //endregion
 
+
 //region on start server
 serialport.on("open", function () {
   let frame_obj = { // AT Request to be sent
@@ -33,7 +36,7 @@ serialport.on("open", function () {
   };
   console.log("STARTED", frame_obj)
 
-  //xbeeAPI.builder.write(frame_obj);
+  xbeeAPI.builder.write(frame_obj);
 
   // frame_obj = { // AT Request to be sent
   //   type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
@@ -70,21 +73,31 @@ xbeeAPI.parser.on("data", function (frame) {
     //storage.registerSensor(frame.remote64)
 
   } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
-
-    console.log("ZIGBEE_IO_DATA_SAMPLE_RX")
-    console.log(frame.digitalSamples, frame.remote64)
-    console.log(frame.digitalSamples.DIO3)
+    console.log("ZIGBEE_IO_DATA_SAMPLE_RX from ", frame.remote64, "with PIN = ", frame.digitalSamples)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
     if(frame.remote64 === puces.controller1.dest64){
+      //region get the last button clicked
+      const keysPressed = whichIs0InObject(frame.digitalSamples);
+      const inputChanged = controller1.whichButtonJustChange(keysPressed) // it doesn't regard if is pressed or unpressed
+      controller1.setPressed(keysPressed)
+      console.log("KEY pressed = ", inputChanged , ". list of buttons = ", [controller1.button0, controller1.button1, controller1.button2, ])
+      //endregion
+
+      if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
+         //besoin d'associer une lumiere avec un button
+        console.log(inputChanged, " is pressed")
+      }
+
+      /*
+      US 4 lessons iot
       if(frame.digitalSamples.DIO3 === 0){
         console.log("frame on")
-        xbeeAPI.builder.write(frames.ledOn_1)
+        xbeeAPI.builder.write(frames.ledOn_3)
       }
       else{
         console.log("frame off")
         xbeeAPI.builder.write(frames.ledOff_1)
-
-      }
+      }*/
     }
 
 
