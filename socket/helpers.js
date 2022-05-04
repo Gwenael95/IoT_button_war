@@ -90,8 +90,9 @@ function gameStart(currGame, xbeeAPI, frames){
 
             break
         }
+        //toujours un soucis, je crois qu'on a un tour de retard entre la lampe allumé et la lampe a cliqué
+        //les boutons a cliqué on toujours un tour d'avance sur les lampes, en gros
         const func = () => {
-            console.log("###### " , el.ledIndex, " is off", "that was element", i, frames["ledOn_" + el.ledIndex], frames)
             xbeeAPI.builder.write(frames["ledOn_" + el.ledIndex])
             el.ledOffIndex.forEach(buttonId=>{
                 xbeeAPI.builder.write(frames["ledOff_" + buttonId])

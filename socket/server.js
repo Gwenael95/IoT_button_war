@@ -53,7 +53,7 @@ serialport.on("open", function () {
 
 currGame = new Game()
 console.log(currGame.randomListLed)
-gameStart(currGame, xbeeAPI, frames)
+gameStart(currGame, xbeeAPI, frames) // encore des soucis entre qui est la lampe vs bouton
 
 // TESTS FIREBASE
 
@@ -67,8 +67,6 @@ gameStart(currGame, xbeeAPI, frames)
 
 
 xbeeAPI.parser.on("data", function (frame) {
-
-  console.log("i receive data")
   //on new device is joined, register it
 
   //on packet received, dispatch event
@@ -104,7 +102,7 @@ xbeeAPI.parser.on("data", function (frame) {
       }*/
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
-    console.log("REMOTE_COMMAND_RESPONSE", frame.commandData)
+    //console.log("REMOTE_COMMAND_RESPONSE", frame.commandData)
     //if off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
   } else {
     console.debug(frame);

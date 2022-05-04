@@ -20,8 +20,9 @@ class Game {
         let currentButton = null
         while(nbSec < this.duration + this.MAX_BETWEEN_LED_CHANGE){
             currentButton = shuffleArray(arrayExcludingVal(this.LED_INDEXES, currentButton))[0] // random led index, without repetition
-            this.randomListLed.push({ledIndex:currentButton, time:nbSec, ledOffIndex:arrayExcludingVal(this.LED_INDEXES, currentButton)})
+            const lastTime =nbSec
             nbSec += getRandInteger(this.MIN_BETWEEN_LED_CHANGE, this.MAX_BETWEEN_LED_CHANGE)
+            this.randomListLed.push({ledIndex:currentButton, time:lastTime, lastTime:nbSec, ledOffIndex:arrayExcludingVal(this.LED_INDEXES, currentButton)})
         }
     }
 
@@ -30,8 +31,8 @@ class Game {
         let val = null;
         if(!this.isEnd()) {
             for (let i = 0; i < this.randomListLed.length; i++) {
-                console.log(this.randomListLed[i], val, this.randomListLed[i].time * 1000, now - this.startTimestamp)
-                if (this.randomListLed[i].time * 1000 > now - this.startTimestamp) {
+                console.log(this.randomListLed[i], val, this.randomListLed[i].lastTime * 1000, now - this.startTimestamp)
+                if (this.randomListLed[i].lastTime * 1000 > now - this.startTimestamp) {
                     val = this.randomListLed[i].ledIndex
                     break
                 } else {
