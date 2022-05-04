@@ -1,7 +1,7 @@
 let SerialPort = require('serialport');
 let xbee_api = require('xbee-api');
 const C = xbee_api.constants;
-//let storage = require("./storage")
+let storage = require("./storage")
 require('dotenv').config()
 const frames = require("./frames");
 const puces = require("./puce_zigbee");
@@ -46,12 +46,20 @@ serialport.on("open", function () {
 
 // All frames parsed by the XBee will be emitted here
 
-// //storage.listSensors().then((sensors) => sensors.forEach((sensor) => console.log(sensor.data())))
+
+
+// TESTS FIREBASE
+
+// storage.updateScore("z5hykmgfjeS8BqryAojK", 3000, 3000)
+//
+// storage.listParties().then((parties) => parties.forEach((partie) => console.log(partie.data())))
+// const dataScore = {
+//   id: 1
+// }
 
 
 
 xbeeAPI.parser.on("data", function (frame) {
-
   console.log("i receive data")
   //on new device is joined, register it
 
@@ -67,7 +75,8 @@ xbeeAPI.parser.on("data", function (frame) {
   if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
     // let dataReceived = String.fromCharCode.apply(null, frame.nodeIdentifier);
     console.log("NODE_IDENTIFICATION");
-    //storage.registerSensor(frame.remote64)
+
+    // storage.registerSensor(frame.remote64)
 
   } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
 

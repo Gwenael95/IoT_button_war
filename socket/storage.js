@@ -8,42 +8,24 @@ admin.initializeApp({
 const db = admin.firestore();
 
 
-module.exports.registerSensor = async function (address) {
+module.exports.updateScore = async function (idScore, scoreJ1, scoreJ2) {
 
-  const docRef = db.collection('sensors').doc(address);
+  const docRef = db.collection('Score').doc(idScore);
 
-  const sensor = {
-    address: address,
-    date: Date.now(),
+  const scoreData = {
+    idScore: idScore,
+    scoreJ1: scoreJ1,
+    scoreJ2: scoreJ2
   }
 
-  await docRef.get().then((snapshotDoc)=> {
-    if (!snapshotDoc.exists)
-      docRef.set(sensor);
-    else
-      docRef.update(sensor);
-  })
+  await docRef.update(scoreData);
 }
 
-module.exports.registerSample = async function (address, sample) {
+module.exports.listParties = function () {
 
-  const docRef = db.collection('sensors').doc(address)
-    .collection('samples').doc(Date.now().toString());
+  const parties = db.collection('Partie');
 
-  const data = {
-    value: sample,
-    date: Date.now(),
-  }
-  await docRef.set(data);
-
-
-}
-
-module.exports.listSensors = function () {
-
-  const docRef = db.collection('sensors');
-
-  return docRef.get()
+  return parties.get()
 
 }
 
