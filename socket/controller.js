@@ -8,7 +8,6 @@ class Controller {
         this.button2 = button2
         this.buttonList = [ this.button0,  this.button1,  this.button2]
         this.indexLastInputChanged = null
-        //this.pressedInputs = {[this.button0]:false, [this.button1]:false, [this.button2]:false }
         this.pressedInputs = []
     }
 

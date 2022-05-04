@@ -40,7 +40,6 @@ ledOn_2.commandParameter = [ C.PIN_MODE.D0.DIGITAL_OUTPUT_HIGH ]
 isLedOn_2 = { ...ledOff_2}
 isLedOn_2.commandParameter = [ ]
 //endregion
-
 //endregion
 
 module.exports = {

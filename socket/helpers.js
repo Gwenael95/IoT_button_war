@@ -1,3 +1,8 @@
+const frames = require("./frames");
+
+function getRandInteger(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) ) + min;
+}
 
 function whichIs0InObject(obj){
     const objKeys = Object.keys(obj);
@@ -9,6 +14,32 @@ function whichIs0InObject(obj){
         }
     }
     return pressedArr
+}
+
+
+/**
+ *
+ * @param xbeeAPI {XBeeAPI}
+ * @param frame
+ * @param controller {Controller} :
+ */
+function handleControllerByFrame(controller, xbeeAPI,  frame){
+    if(frame.remote64 === controller.dest64){
+        //region get the last button clicked
+        const keysPressed = whichIs0InObject(frame.digitalSamples);
+        const inputChanged = controller.whichButtonJustChange(keysPressed) // it doesn't regard if is pressed or unpressed
+        controller.setPressed(keysPressed)
+        console.log("KEY changing = ", inputChanged)
+        //endregion
+
+        if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
+            console.log(inputChanged, "is pressed", controller.indexLastInputChanged)
+            //xbeeAPI.builder.write(frames["ledOff_" + controller.indexLastInputChanged])
+            xbeeAPI.builder.write(frames["ledOff_" + controller.indexLastInputChanged])
+
+            //xbeeAPI.builder.write(frames["isLedOn_" + controller.indexLastInputChanged]) // is that usefull to check if switch on, could be saved in var
+        }
+    }
 }
 
 //region deprecated, not useful anymore
@@ -49,4 +80,4 @@ function giveSampleButtonArr(buttonNameList){
     return arr
 }
 //endregion
-module.exports = { objectContainsKeys, whichIs0InObject, giveSampleByButton, giveSampleButtonArr};
+module.exports = { objectContainsKeys, whichIs0InObject, giveSampleByButton, giveSampleButtonArr, handleControllerByFrame};

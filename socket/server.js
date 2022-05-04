@@ -4,8 +4,7 @@ let xbee_api = require('xbee-api');
 require('dotenv').config()
 const frames = require("./frames");
 const puces = require("./puce_zigbee");
-const {whichIs0InObject} = require("./helpers");
-const {controller1} = require("./puce_zigbee");
+const {handleControllerByFrame} = require("./helpers");
 
 //region init
 const C = xbee_api.constants;
@@ -53,7 +52,6 @@ serialport.on("open", function () {
 
 // //storage.listSensors().then((sensors) => sensors.forEach((sensor) => console.log(sensor.data())))
 
-
 xbeeAPI.parser.on("data", function (frame) {
   //on new device is joined, register it
 
@@ -75,21 +73,9 @@ xbeeAPI.parser.on("data", function (frame) {
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX from ", frame.remote64, "with PIN = ", frame.digitalSamples)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
 
-    if(frame.remote64 === puces.controller1.dest64){
-      //region get the last button clicked
-      const keysPressed = whichIs0InObject(frame.digitalSamples);
-      const inputChanged = controller1.whichButtonJustChange(keysPressed) // it doesn't regard if is pressed or unpressed
-      controller1.setPressed(keysPressed)
-      console.log("KEY changing = ", inputChanged)
-      //endregion
-
-      if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
-         //besoin d'associer une lumiere avec un button
-        console.log(inputChanged, "is pressed", puces.controller1.indexLastInputChanged)
-        console.log(frames["isLedOn_" + puces.controller1.indexLastInputChanged])
-      }
-
-      /*
+    handleControllerByFrame(puces.controller1, xbeeAPI, frame)
+    handleControllerByFrame(puces.controller2, xbeeAPI, frame)
+   /*
       US 4 lessons iot
       if(frame.digitalSamples.DIO3 === 0){
         console.log("frame on")
@@ -99,11 +85,10 @@ xbeeAPI.parser.on("data", function (frame) {
         console.log("frame off")
         xbeeAPI.builder.write(frames.ledOff_1)
       }*/
-    }
-
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
-    console.log("REMOTE_COMMAND_RESPONSE")
+    console.log("REMOTE_COMMAND_RESPONSE", frame.commandData)
+    //if off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
   } else {
     console.debug(frame);
     let dataReceived = String.fromCharCode.apply(null, frame.commandData)
