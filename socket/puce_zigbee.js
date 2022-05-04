@@ -1,4 +1,4 @@
-railas = "0013A20041C34B12".toLowerCase()
-gwen = "0013A20041A72946".toLowerCase()
+ledBoard = {dest64:"0013A20041C34B12".toLowerCase(), dest16:"B332"}
+controller1 =  {dest64:"0013A20041A72946".toLowerCase(), dest16:"B089"}
 
-module.exports = { railas, gwen };
+module.exports = { ledBoard, controller1 };

@@ -1,18 +1,17 @@
 let SerialPort = require('serialport');
 let xbee_api = require('xbee-api');
-const C = xbee_api.constants;
 //let storage = require("./storage")
 require('dotenv').config()
 const frames = require("./frames");
 const puces = require("./puce_zigbee");
 
-
+//region init
+const C = xbee_api.constants;
 const SERIAL_PORT = process.env.SERIAL_PORT;
 
 let xbeeAPI = new xbee_api.XBeeAPI({
   api_mode: parseInt(process.env.API_MODE) || 1
 });
-
 let serialport = new SerialPort(SERIAL_PORT, {
   baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 9600,
 }, function (err) {
@@ -23,7 +22,9 @@ let serialport = new SerialPort(SERIAL_PORT, {
 
 serialport.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
+//endregion
 
+//region on start server
 serialport.on("open", function () {
   let frame_obj = { // AT Request to be sent
     type: C.FRAME_TYPE.AT_COMMAND,
@@ -32,7 +33,7 @@ serialport.on("open", function () {
   };
   console.log("STARTED", frame_obj)
 
-  xbeeAPI.builder.write(frame_obj);
+  //xbeeAPI.builder.write(frame_obj);
 
   // frame_obj = { // AT Request to be sent
   //   type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
@@ -43,15 +44,14 @@ serialport.on("open", function () {
   // xbeeAPI.builder.write(frame_obj);
 
 });
+//endregion
 
 // All frames parsed by the XBee will be emitted here
 
 // //storage.listSensors().then((sensors) => sensors.forEach((sensor) => console.log(sensor.data())))
 
 
-
 xbeeAPI.parser.on("data", function (frame) {
-
   console.log("i receive data")
   //on new device is joined, register it
 
@@ -75,14 +75,14 @@ xbeeAPI.parser.on("data", function (frame) {
     console.log(frame.digitalSamples, frame.remote64)
     console.log(frame.digitalSamples.DIO3)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
-    if(frame.remote64 === puces.gwen){
+    if(frame.remote64 === puces.controller1.dest64){
       if(frame.digitalSamples.DIO3 === 0){
         console.log("frame on")
-        xbeeAPI.builder.write(frames.remoteOnRailas)
+        xbeeAPI.builder.write(frames.ledOn_1)
       }
       else{
         console.log("frame off")
-        xbeeAPI.builder.write(frames.remoteOffRailas)
+        xbeeAPI.builder.write(frames.ledOff_1)
 
       }
     }
