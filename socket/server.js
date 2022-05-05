@@ -21,7 +21,7 @@ const storeObs = (docSnapshot) =>{
   const doc = docSnapshot.docs[docSnapshot.docChanges()[0].newIndex]
   let duration = null;
   try{
-    duration = parseInt(doc._fieldsProto.duree[doc._fieldsProto.duree.valueType])
+    duration = parseInt(doc._fieldsProto.dureeParty[doc._fieldsProto.dureeParty.valueType])
   }catch (e){
   }
   launchGameOnNewParty(doc.id, duration)
@@ -55,31 +55,38 @@ let serialport2 = new SerialPort(SERIAL_PORT2, {
 });
 
 serialport.pipe(xbeeAPI.parser);
-serialport2.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
+
+serialport2.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport2);
 //endregion
 
-const players = []
 //region on start server
-serialport.on("open", function () {
+onOpenPort = () =>{
   let frame_obj = { // AT Request to be sent
     type: C.FRAME_TYPE.AT_COMMAND,
     command: "NI",
     commandParameter: [],
   };
-  console.log("STARTED")
   xbeeAPI.builder.write(frame_obj);
-
-  // frame_obj = { // AT Request to be sent
-  //   type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
-  //   destination64: "FFFFFFFFFFFFFFFF",
-  //   command: "NI",
-  //   commandParameter: [],
-  // };
-  // xbeeAPI.builder.write(frame_obj);
-
-});
+  /*
+  let frame_sh = {
+    type: C.FRAME_TYPE.AT_COMMAND_QUEUE_PARAMETER_VALUE,
+    command: "SH",
+    commandParameter: [] // Can either be string or byte array.
+  }
+  let frame_sl = {
+    type: C.FRAME_TYPE.AT_COMMAND_QUEUE_PARAMETER_VALUE,
+    command: "SL",
+    commandParameter: [] // Can either be string or byte array.
+  }
+  console.log("STARTED")
+  //nextFrameId() save it , and return it for the last xbeeApiBuilder
+  xbeeAPI.builder.write(frame_sh);
+  xbeeAPI.builder.write(frame_sl);
+  */
+}
+serialport.on("open", onOpenPort);
 //endregion
 
 // All frames parsed by the XBee will be emitted here
@@ -121,11 +128,20 @@ xbeeAPI.parser.on("data", function (frame) {
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
     //console.log("REMOTE_COMMAND_RESPONSE", frame.commandData) //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
   }
-  //else if(C.FRAME_TYPE.AT_COMMAND === frame.type){}
   else {
     console.debug("frame = ", frame);
-    let dataReceived = String.fromCharCode.apply(null, frame.commandData)
-    console.log("data received = ", dataReceived);
-  }
 
+    if(frame.command === "SH"){
+      const sh = frame.commandData.toString("hex")
+      console.log("SH = ", sh )
+    }
+    else if(frame.command === "SL"){
+      const sl = frame.commandData.toString("hex")
+      console.log("SL = ", sl )
+    }
+    else{
+      let dataReceived = String.fromCharCode.apply(null, frame.commandData)
+      console.log("data received = ", dataReceived);
+    }
+  }
 });
