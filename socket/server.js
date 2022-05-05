@@ -16,7 +16,7 @@ const launchGameOnNewParty = (newDocId, duration) =>{
   const onEnd = (score) =>{
     storage.updateParty(newDocId, score)
   }
-  currGame = new Game([puces.controller1, puces.controller2], newDocId, duration, onEnd)
+  currGame = new Game(puces.controllerList, newDocId, duration, onEnd)
   gameStart(currGame, xbeeAPI, frames, storage)
 }
 const storeObs = (docSnapshot) =>{
@@ -58,6 +58,14 @@ onOpenPort = () =>{
   xbeeAPI.builder.write(frames.frame_name);
   xbeeAPI.builder.write(frames.frame_sh);
   xbeeAPI.builder.write(frames.frame_sl);
+  xbeeAPI.builder.write(frames.frame_net_addr);
+
+  //to init buttons automatically
+  xbeeAPI.builder.write(frames.frame_d0);
+  xbeeAPI.builder.write(frames.frame_d1);
+  xbeeAPI.builder.write(frames.frame_d2);
+  xbeeAPI.builder.write(frames.frame_d3);
+  xbeeAPI.builder.write(frames.frame_d4);
 }
 serialport.on("open", onOpenPort);
 //endregion
@@ -87,39 +95,66 @@ xbeeAPI.parser.on("data", function (frame) {
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX from ", frame.remote64, "with PIN = ", frame.digitalSamples)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
 
-    handleControllerByFrame(puces.controller1, xbeeAPI, frame, currGame, storage)
-    handleControllerByFrame(puces.controller2, xbeeAPI, frame, currGame, storage)
+    puces.controllerList.forEach(controller=>{
+      handleControllerByFrame(controller, xbeeAPI, frame, currGame, storage)
+    })
 
-      // //US 4 lessons iot
-      // if(frame.digitalSamples.DIO3 === 0){
-      //   console.log("frame on")
-      //   xbeeAPI.builder.write(frames.ledOn_3)
-      // }
-      // else{
-      //   console.log("frame off")
-      //   xbeeAPI.builder.write(frames.ledOff_1)
-      // }
+    // //US 4 lessons iot
+    // if(frame.digitalSamples.DIO3 === 0){
+    //   console.log("frame on")
+    //   xbeeAPI.builder.write(frames.ledOn_3)
+    // }
+    // else{
+    //   console.log("frame off")
+    //   xbeeAPI.builder.write(frames.ledOff_1)
+    // }
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
     //console.log("REMOTE_COMMAND_RESPONSE", frame.commandData) //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
   }
   else {
-    console.debug("frame = ", frame);
-
-    if(frame.command === "SH"){
-      const sh = frame.commandData.toString("hex")
-      console.log("SH = ", sh )
-    }
-    else if(frame.command === "SL"){
-      const sl = frame.commandData.toString("hex")
-      console.log("SL = ", sl )
-    }
-    else{
-      let dataReceived = String.fromCharCode.apply(null, frame.commandData)
-      console.log("data received = ", dataReceived);
-    }
+    autoConfigFromFrameData(frame, 1)
   }
 });
+
+//region autoconfig from frame
+/**
+ *
+ * @param frame
+ * @param index {int}
+ */
+function autoConfigFromFrameData(frame, index){
+  console.debug("frame = ", frame);
+  if(frame.command === "SH"){
+    const sh = frame.commandData.toString("hex")
+    puces["controller" + index].setSh(sh)
+    console.log(puces["controller" + index].dest64)
+  }
+  else if(frame.command === "SL"){
+    const sl = frame.commandData.toString("hex")
+    puces["controller" + index].setSl(sl)
+    console.log(puces["controller" + index].dest64)
+  }
+  else if(frame.command === "MY"){
+    const my = frame.commandData.toString("hex")
+    puces["controller" + index].setDest16(my)
+    console.log(puces["controller" + index].dest16)
+  }
+  else if(frame.command === "D0" || frame.command === "D1" || frame.command === "D2"
+      || frame.command === "D3" || frame.command === "D4"){
+    const dVal = frame.commandData.toString("hex")
+    if(dVal === "03"){
+      const pin = frame.command.replace("D", "DIO")
+      puces["controller" + index].addButtonInPotentialButton(pin)
+      console.log("HERE CONTROLLERS", puces["controller" + index].potentialButton)
+    }
+  }
+  else{
+    let dataReceived = String.fromCharCode.apply(null, frame.commandData)
+    console.log("data received = ", dataReceived);
+  }
+}
+//endregion
 //endregion
 
 
@@ -163,39 +198,11 @@ function autoConfigController(index){
     } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
     }
     else {
-      console.debug("frame = ", frame);
-      if(frame.command === "SH"){
-        const sh = frame.commandData.toString("hex")
-        puces["controller" + index].setSh(sh)
-        console.log(puces["controller" + index].dest64)
-      }
-      else if(frame.command === "SL"){
-        const sl = frame.commandData.toString("hex")
-        puces["controller" + index].setSl(sl)
-        console.log(puces["controller" + index].dest64)
-      }
-      else if(frame.command === "MY"){
-        const my = frame.commandData.toString("hex")
-        puces["controller" + index].setDest16(my)
-        console.log(puces["controller" + index].dest16)
-      }
-      else if(frame.command === "D0" || frame.command === "D1" || frame.command === "D2"
-          || frame.command === "D3" || frame.command === "D4"){
-        const dVal = frame.commandData.toString("hex")
-        if(dVal === "03"){
-          const pin = frame.command.replace("D", "DIO")
-          puces["controller" + index].addButtonInPotentialButton(pin)
-          console.log("HERE CONTROLLERS", puces["controller" + index].potentialButton)
-        }
-      }
-      else{
-        let dataReceived = String.fromCharCode.apply(null, frame.commandData)
-        console.log("data received = ", dataReceived);
-      }
+      autoConfigFromFrameData(frame, index)
     }
   })
 }
 autoConfigController(2)
-//autoConfigController(3)
-//autoConfigController(4)
+autoConfigController(3)
+autoConfigController(4)
 //endregion
