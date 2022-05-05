@@ -1,3 +1,4 @@
+//region Import
 let SerialPort = require('serialport');
 let xbee_api = require('xbee-api');
 let storage = require("./storage")
@@ -6,6 +7,7 @@ const frames = require("./frames");
 const puces = require("./puce_zigbee");
 const {handleControllerByFrame, gameStart} = require("./helpers");
 const {Game} = require("./game");
+//endregion
 
 //region listen new party to start new game
 currGame = null
@@ -34,19 +36,12 @@ const storageObserverParties = storage.observerParties(storeObs)
 //region init
 const C = xbee_api.constants;
 const SERIAL_PORT = process.env.SERIAL_PORT;
-const SERIAL_PORT2 = process.env.SERIAL_PORT2;
 
 let xbeeAPI = new xbee_api.XBeeAPI({
   api_mode: parseInt(process.env.API_MODE) || 1
 });
+
 let serialport = new SerialPort(SERIAL_PORT, {
-  baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 115200,
-}, function (err) {
-  if (err) {
-    return console.log('Error: ', err.message)
-  }
-});
-let serialport2 = new SerialPort(SERIAL_PORT2, {
   baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 115200,
 }, function (err) {
   if (err) {
@@ -56,43 +51,23 @@ let serialport2 = new SerialPort(SERIAL_PORT2, {
 
 serialport.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
-
-serialport2.pipe(xbeeAPI.parser);
-xbeeAPI.builder.pipe(serialport2);
 //endregion
 
 //region on start server
 onOpenPort = () =>{
-  let frame_obj = { // AT Request to be sent
-    type: C.FRAME_TYPE.AT_COMMAND,
-    command: "NI",
-    commandParameter: [],
-  };
-  xbeeAPI.builder.write(frame_obj);
-  /*
-  let frame_sh = {
-    type: C.FRAME_TYPE.AT_COMMAND_QUEUE_PARAMETER_VALUE,
-    command: "SH",
-    commandParameter: [] // Can either be string or byte array.
-  }
-  let frame_sl = {
-    type: C.FRAME_TYPE.AT_COMMAND_QUEUE_PARAMETER_VALUE,
-    command: "SL",
-    commandParameter: [] // Can either be string or byte array.
-  }
-  console.log("STARTED")
-  //nextFrameId() save it , and return it for the last xbeeApiBuilder
-  xbeeAPI.builder.write(frame_sh);
-  xbeeAPI.builder.write(frame_sl);
-  */
+  xbeeAPI.builder.write(frames.frame_name);
+  xbeeAPI.builder.write(frames.frame_sh);
+  xbeeAPI.builder.write(frames.frame_sl);
 }
 serialport.on("open", onOpenPort);
 //endregion
 
 // All frames parsed by the XBee will be emitted here
 
-
+//region main parser
 xbeeAPI.parser.on("data", function (frame) {
+  console.log("PORT 1 RECEIVE DATA")
+
   //on new device is joined, register it
 
   //on packet received, dispatch event
@@ -145,3 +120,82 @@ xbeeAPI.parser.on("data", function (frame) {
     }
   }
 });
+//endregion
+
+
+
+//region prepare for Controller for index
+function autoConfigController(index){
+  const SERIAL_PORT2 = process.env["SERIAL_PORT" + index];
+  let xbeeAPI2 = new xbee_api.XBeeAPI({
+    api_mode: parseInt(process.env.API_MODE) || 1
+  });
+  let serialport2 = new SerialPort(SERIAL_PORT2, {
+    baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 115200,
+  }, function (err) {
+    if (err) {
+      return console.log('Error: ', err.message)
+    }
+  });
+  serialport2.pipe(xbeeAPI2.parser);
+  xbeeAPI2.builder.pipe(serialport2);
+
+  onOpenPort2 = () => {
+    xbeeAPI2.builder.write(frames.frame_name);
+    xbeeAPI2.builder.write(frames.frame_sh);
+    xbeeAPI2.builder.write(frames.frame_sl);
+    xbeeAPI2.builder.write(frames.frame_net_addr);
+
+    //to init buttons automatically
+    xbeeAPI2.builder.write(frames.frame_d0);
+    xbeeAPI2.builder.write(frames.frame_d1);
+    xbeeAPI2.builder.write(frames.frame_d2);
+    xbeeAPI2.builder.write(frames.frame_d3);
+    xbeeAPI2.builder.write(frames.frame_d4);
+  }
+  serialport2.on("open", onOpenPort2);
+
+
+  xbeeAPI2.parser.on("data", function(frame){
+    console.log("PORT", index, "RECEIVE DATA")
+    if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
+    } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
+    } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
+    }
+    else {
+      console.debug("frame = ", frame);
+      if(frame.command === "SH"){
+        const sh = frame.commandData.toString("hex")
+        puces["controller" + index].setSh(sh)
+        console.log(puces["controller" + index].dest64)
+      }
+      else if(frame.command === "SL"){
+        const sl = frame.commandData.toString("hex")
+        puces["controller" + index].setSl(sl)
+        console.log(puces["controller" + index].dest64)
+      }
+      else if(frame.command === "MY"){
+        const my = frame.commandData.toString("hex")
+        puces["controller" + index].setDest16(my)
+        console.log(puces["controller" + index].dest16)
+      }
+      else if(frame.command === "D0" || frame.command === "D1" || frame.command === "D2"
+          || frame.command === "D3" || frame.command === "D4"){
+        const dVal = frame.commandData.toString("hex")
+        if(dVal === "03"){
+          const pin = frame.command.replace("D", "DIO")
+          puces["controller" + index].addButtonInPotentialButton(pin)
+          console.log("HERE CONTROLLERS", puces["controller" + index].potentialButton)
+        }
+      }
+      else{
+        let dataReceived = String.fromCharCode.apply(null, frame.commandData)
+        console.log("data received = ", dataReceived);
+      }
+    }
+  })
+}
+autoConfigController(2)
+//autoConfigController(3)
+//autoConfigController(4)
+//endregion
