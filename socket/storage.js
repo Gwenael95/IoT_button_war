@@ -6,26 +6,47 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+const docRef = db.collection('Score')
+const scoreDocId = getMainScoreDocId()
+const docParties = db.collection('Partie');
 
+/**
+ * use to get the 'score' collection's doc id from firebase
+ * @return {Promise<null>}
+ */
+async function getMainScoreDocId(){
+  const snapshot = await docRef.get();
+  let scoreDocId = null
 
-module.exports.updateScore = async function (idScore, scoreJ1, scoreJ2) {
+  //seems impossible to get doc with another function thant foreach
+  snapshot.forEach(doc => {
+    scoreDocId = doc.id;
+  });
+  return scoreDocId;
+}
 
-  const docRef = db.collection('Score').doc(idScore);
-
+//module.exports.updateScore = async function ( scoreJ1, scoreJ2) {
+updateScore = async function ( scoreJ1, scoreJ2) {
   const scoreData = {
-    idScore: idScore,
     scoreJ1: scoreJ1,
     scoreJ2: scoreJ2
   }
-
-  await docRef.update(scoreData);
+  await docRef.doc(await scoreDocId).update(scoreData);
 }
 
-module.exports.listParties = function () {
-
+listParties = function () {
   const parties = db.collection('Partie');
-
   return parties.get()
-
 }
 
+function observerParties(func){
+  return docParties.onSnapshot(docSnapshot => {
+    func(docSnapshot)
+  }, err => {
+    console.log(`Encountered error: ${err}`);
+  });
+}
+
+module.exports = {
+  docParties, updateScore, observerParties
+};

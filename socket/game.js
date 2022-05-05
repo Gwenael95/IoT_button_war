@@ -11,8 +11,9 @@ class Game {
     /**
      *
      * @param players {Array<Controller>}
+     * @param firestoreDocRef {string}
      */
-    constructor(players) {
+    constructor(players, firestoreDocRef) {
         this.duration = 30 // in seconds
         this.currentLight = []
         this.startTimestamp = null
@@ -20,6 +21,7 @@ class Game {
         this.randomListLed = []
         this.scores = {}
         this.players = players
+        this.firestoreDocRef = firestoreDocRef
         this._initScores()
         this._initRandomListIndexLight()
         this.start()
@@ -32,6 +34,7 @@ class Game {
     setScore(controller, isGood){
         this.scores[controller.dest64] += (isGood ? this.POINT_PER_GOOD : this.POINT_PER_BAD)
         console.log("Score = ", controller.dest64, this.scores[controller.dest64] , (isGood ? "the light was on, +" +  this.POINT_PER_GOOD + " pt" : "the light was off, -" + this.POINT_PER_BAD + " pts"))
+        return this.scores[controller.dest64]
     }
 
     _initRandomListIndexLight(){
@@ -39,9 +42,9 @@ class Game {
         let currentButton = null
         while(nbSec < this.duration + this.MAX_BETWEEN_LED_CHANGE){
             currentButton = shuffleArray(arrayExcludingVal(this.LED_INDEXES, currentButton))[0] // random led index, without repetition
-            const lastTime =nbSec
+            const prevTime = nbSec
             nbSec += getRandInteger(this.MIN_BETWEEN_LED_CHANGE, this.MAX_BETWEEN_LED_CHANGE)
-            this.randomListLed.push({ledIndex:currentButton, time:lastTime, lastTime:nbSec, ledOffIndex:arrayExcludingVal(this.LED_INDEXES, currentButton)})
+            this.randomListLed.push({ledIndex:currentButton, time:prevTime, finalTime:nbSec, ledOffIndex:arrayExcludingVal(this.LED_INDEXES, currentButton)})
         }
     }
 
@@ -50,8 +53,8 @@ class Game {
         let val = null;
         if(!this.isEnd()) {
             for (let i = 0; i < this.randomListLed.length; i++) {
-                console.log(this.randomListLed[i], val, this.randomListLed[i].lastTime * 1000, now - this.startTimestamp)
-                if (this.randomListLed[i].lastTime * 1000 > now - this.startTimestamp) {
+                //console.log(this.randomListLed[i], val, this.randomListLed[i].finalTime * 1000, now - this.startTimestamp)
+                if (this.randomListLed[i].finalTime * 1000 > now - this.startTimestamp) {
                     val = this.randomListLed[i].ledIndex
                     break
                 } else {

@@ -7,6 +7,23 @@ const puces = require("./puce_zigbee");
 const {handleControllerByFrame, gameStart} = require("./helpers");
 const {Game} = require("./game");
 
+//region listen new party to start new game
+currGame = null
+
+const launchGameOnNewParty = (newDocRef) =>{
+  currGame = new Game([puces.controller1, puces.controller2], newDocRef)
+  gameStart(currGame, xbeeAPI, frames)
+}
+const storeObs = (docSnapshot) =>{
+  if(docSnapshot.docChanges().length === 1 && docSnapshot.docChanges()[0].type === "added"){
+      launchGameOnNewParty(docSnapshot.docs[docSnapshot.docChanges()[0].newIndex].ref)
+  }
+}
+const storageObserverParties = storage.observerParties(storeObs)
+//storageObserverParties(); // stop listening
+//endregion
+
+
 //region init
 const C = xbee_api.constants;
 const SERIAL_PORT = process.env.SERIAL_PORT;
@@ -51,21 +68,6 @@ serialport.on("open", function () {
 // All frames parsed by the XBee will be emitted here
 
 
-currGame = new Game([puces.controller1, puces.controller2])
-console.log(currGame.randomListLed)
-gameStart(currGame, xbeeAPI, frames) // encore des soucis entre qui est la lampe vs bouton
-
-// TESTS FIREBASE
-
-// storage.updateScore("z5hykmgfjeS8BqryAojK", 3000, 3000)
-//
-// storage.listParties().then((parties) => parties.forEach((partie) => console.log(partie.data())))
-// const dataScore = {
-//   id: 1
-// }
-
-
-
 xbeeAPI.parser.on("data", function (frame) {
   //on new device is joined, register it
 
@@ -75,35 +77,32 @@ xbeeAPI.parser.on("data", function (frame) {
     console.log("C.FRAME_TYPE.ZIGBEE_RECEIVE_PACKET");
     let dataReceived = String.fromCharCode.apply(null, frame.data);
     console.log(">> ZIGBEE_RECEIVE_PACKET >", dataReceived);
-
   }
 
   if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
     // let dataReceived = String.fromCharCode.apply(null, frame.nodeIdentifier);
     console.log("NODE_IDENTIFICATION");
-
     // storage.registerSensor(frame.remote64)
 
   } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX from ", frame.remote64, "with PIN = ", frame.digitalSamples)
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
 
-    handleControllerByFrame(puces.controller1, xbeeAPI, frame, currGame, "ledOff_")
-    handleControllerByFrame(puces.controller2, xbeeAPI, frame, currGame, "ledOn_")
-   /*
-      US 4 lessons iot
-      if(frame.digitalSamples.DIO3 === 0){
-        console.log("frame on")
-        xbeeAPI.builder.write(frames.ledOn_3)
-      }
-      else{
-        console.log("frame off")
-        xbeeAPI.builder.write(frames.ledOff_1)
-      }*/
+    handleControllerByFrame(puces.controller1, xbeeAPI, frame, currGame, storage)
+    handleControllerByFrame(puces.controller2, xbeeAPI, frame, currGame, storage)
+
+      // //US 4 lessons iot
+      // if(frame.digitalSamples.DIO3 === 0){
+      //   console.log("frame on")
+      //   xbeeAPI.builder.write(frames.ledOn_3)
+      // }
+      // else{
+      //   console.log("frame off")
+      //   xbeeAPI.builder.write(frames.ledOff_1)
+      // }
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
-    //console.log("REMOTE_COMMAND_RESPONSE", frame.commandData)
-    //if off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
+    //console.log("REMOTE_COMMAND_RESPONSE", frame.commandData) //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
   } else {
     console.debug(frame);
     let dataReceived = String.fromCharCode.apply(null, frame.commandData)

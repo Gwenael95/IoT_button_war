@@ -40,13 +40,13 @@ function whichIs0InObject(obj){
  * @param frame {object}
  * @param controller {Controller} :
  * @param currGame {Game}
- * @param framesFuncBasename {string}
+ * @param storage
  */
-function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, framesFuncBasename){
+function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, storage){
     if(frame.remote64 === controller.dest64){
         const lightOn = currGame.getLightOn();
         if(lightOn === null){
-            console.log("END OF THE GAME")
+            console.log("END OF THE GAME, (you should stop spamming)")
             return null
         }
 
@@ -58,9 +58,11 @@ function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, framesFu
         //endregion
 
         if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
-            console.log(inputChanged, "is pressed", controller.indexLastInputChanged, " current light on=", lightOn, " --- last changed = ", controller.indexLastInputChanged)
-            //xbeeAPI.builder.write(frames[(framesFuncBasename) + controller.indexLastInputChanged]) // then add frames as param
-            currGame.setScore(controller, lightOn === controller.indexLastInputChanged)
+            //console.log(inputChanged, "is pressed", controller.indexLastInputChanged, " current light on=", lightOn, " --- last changed = ", controller.indexLastInputChanged)
+            console.log("light on=", lightOn)
+            let playerScore = currGame.setScore(controller, lightOn === controller.indexLastInputChanged)
+            storage.updateScore( playerScore, 30)
+
             //xbeeAPI.builder.write(frames["isLedOn_" + controller.indexLastInputChanged]) // is that usefull to check if switch on, could be saved in var
         }
     }
