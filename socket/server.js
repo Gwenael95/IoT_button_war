@@ -10,14 +10,19 @@ const {Game} = require("./game");
 //region listen new party to start new game
 currGame = null
 
-const launchGameOnNewParty = (newDocRef) =>{
-  currGame = new Game([puces.controller1, puces.controller2], newDocRef)
-  gameStart(currGame, xbeeAPI, frames)
+const launchGameOnNewParty = (newDocRef, duration) =>{
+  currGame = new Game([puces.controller1, puces.controller2], newDocRef, duration)
+  //storage.updateParty(newDocRef, {})
+  gameStart(currGame, xbeeAPI, frames, storage)
 }
 const storeObs = (docSnapshot) =>{
-  if(docSnapshot.docChanges().length === 1 && docSnapshot.docChanges()[0].type === "added"){
-      launchGameOnNewParty(docSnapshot.docs[docSnapshot.docChanges()[0].newIndex].ref)
+  const doc = docSnapshot.docs[docSnapshot.docChanges()[0].newIndex]
+  let duration = null;
+  try{
+    duration = parseInt(doc._fieldsProto.duree[doc._fieldsProto.duree.valueType])
+  }catch (e){
   }
+  launchGameOnNewParty(doc.ref, duration)
 }
 const storageObserverParties = storage.observerParties(storeObs)
 //storageObserverParties(); // stop listening
@@ -43,6 +48,7 @@ serialport.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
 //endregion
 
+const players = []
 //region on start server
 serialport.on("open", function () {
   let frame_obj = { // AT Request to be sent
@@ -50,17 +56,16 @@ serialport.on("open", function () {
     command: "NI",
     commandParameter: [],
   };
-  console.log("STARTED", frame_obj)
-
+  console.log("STARTED")
   xbeeAPI.builder.write(frame_obj);
 
-  // frame_obj = { // AT Request to be sent
-  //   type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
-  //   destination64: "FFFFFFFFFFFFFFFF",
-  //   command: "NI",
-  //   commandParameter: [],
-  // };
-  // xbeeAPI.builder.write(frame_obj);
+  frame_obj = { // AT Request to be sent
+    type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
+    destination64: "FFFFFFFFFFFFFFFF",
+    command: "NI",
+    commandParameter: [],
+  };
+  xbeeAPI.builder.write(frame_obj);
 
 });
 //endregion
@@ -103,10 +108,12 @@ xbeeAPI.parser.on("data", function (frame) {
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
     //console.log("REMOTE_COMMAND_RESPONSE", frame.commandData) //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
-  } else {
-    console.debug(frame);
+  }
+  //else if(C.FRAME_TYPE.AT_COMMAND === frame.type){}
+  else {
+    console.debug("frame = ", frame);
     let dataReceived = String.fromCharCode.apply(null, frame.commandData)
-    console.log(dataReceived);
+    console.log("data received = ", dataReceived);
   }
 
 });

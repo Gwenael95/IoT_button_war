@@ -3,6 +3,12 @@ function getRandInteger(min, max) {
 }
 
 //region array
+/**
+ * return an array containing all element from arr1 that are not in arr2
+ * @param arr1
+ * @param arr2
+ * @return {*}
+ */
 function getDiffInArray(arr1, arr2){
     return arr1.filter(x => !arr2.includes(x)) .concat(arr2.filter(x => !arr1.includes(x)))
 }
@@ -10,6 +16,11 @@ function arrayExcludingVal(arr1, value){
     return arr1.filter(x => value!==x)
 }
 
+/**
+ * move all element in array to another random index
+ * @param array
+ * @return {*}
+ */
 const shuffleArray = array => {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -21,6 +32,11 @@ const shuffleArray = array => {
 }
 //endregion
 
+/**
+ * get an array of element == 0 in an object
+ * @param obj
+ * @return {*[]}
+ */
 function whichIs0InObject(obj){
     const objKeys = Object.keys(obj);
     let pressedArr = [];
@@ -35,7 +51,7 @@ function whichIs0InObject(obj){
 
 //region xbee commands
 /**
- *
+ * handle the action for a specified controller, like adding score to player and saving it to db
  * @param xbeeAPI {XBeeAPI}
  * @param frame {object}
  * @param controller {Controller} :
@@ -61,7 +77,8 @@ function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, storage)
             //console.log(inputChanged, "is pressed", controller.indexLastInputChanged, " current light on=", lightOn, " --- last changed = ", controller.indexLastInputChanged)
             console.log("light on=", lightOn)
             let playerScore = currGame.setScore(controller, lightOn === controller.indexLastInputChanged)
-            storage.updateScore( playerScore, 30)
+            //storage.updateScore( playerScore, 30)
+            storage.updateScore( currGame.getFormatedScore())
 
             //xbeeAPI.builder.write(frames["isLedOn_" + controller.indexLastInputChanged]) // is that usefull to check if switch on, could be saved in var
         }
@@ -69,11 +86,14 @@ function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, storage)
 }
 
 /**
- *
+ * init a new game, all the sequence is prepared, and events occurred thanks to setTimeout
  * @param currGame {Game}
  * @param xbeeAPI {XBeeAPI}
+ * @param frames
+ * @param storage
  */
-function gameStart(currGame, xbeeAPI, frames){
+function gameStart(currGame, xbeeAPI, frames, storage){
+    storage.resetScore()
     for(let i=0; i<currGame.randomListLed.length ;i++){
         const el = currGame.randomListLed[i]
         console.log(el)
@@ -87,10 +107,9 @@ function gameStart(currGame, xbeeAPI, frames){
 
             break
         }
-        //toujours un soucis, je crois qu'on a un tour de retard entre la lampe allumé et la lampe a cliqué
-        //les boutons a cliqué on toujours un tour d'avance sur les lampes, en gros
+
         const func = () => {
-            xbeeAPI.builder.write(frames["ledOn_" + el.ledIndex])
+            xbeeAPI.builder.write(frames["ledOn_" + el.ledOnIndex])
             el.ledOffIndex.forEach(buttonId=>{
                 xbeeAPI.builder.write(frames["ledOff_" + buttonId])
             })

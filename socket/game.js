@@ -12,9 +12,10 @@ class Game {
      *
      * @param players {Array<Controller>}
      * @param firestoreDocRef {string}
+     * @param duration {int|null|undefined}
      */
-    constructor(players, firestoreDocRef) {
-        this.duration = 30 // in seconds
+    constructor(players, firestoreDocRef, duration) {
+        this.duration = (duration === null || duration === undefined ? 60 : duration) // in seconds
         this.currentLight = []
         this.startTimestamp = null
         this.isGameEnd = false
@@ -36,18 +37,36 @@ class Game {
         console.log("Score = ", controller.dest64, this.scores[controller.dest64] , (isGood ? "the light was on, +" +  this.POINT_PER_GOOD + " pt" : "the light was off, -" + this.POINT_PER_BAD + " pts"))
         return this.scores[controller.dest64]
     }
+    getFormatedScore(){
+        const data = {}
+        for (let i=0; i<this.players.length ;i++){
+            data["scoreJ" + (i+1)] = this.scores[this.players[i].dest64]
+        }
+        return data
+    }
 
+    /**
+     * init the game sequence of light to switch on randomly.
+     * ledOnIndex is the index of light to be on.
+     * time is the
+     * finalTime is the start time the light is switch on
+     * @private
+     */
     _initRandomListIndexLight(){
         let nbSec = 0
-        let currentButton = null
+        let currentLedIndex = null
         while(nbSec < this.duration + this.MAX_BETWEEN_LED_CHANGE){
-            currentButton = shuffleArray(arrayExcludingVal(this.LED_INDEXES, currentButton))[0] // random led index, without repetition
+            currentLedIndex = shuffleArray(arrayExcludingVal(this.LED_INDEXES, currentLedIndex))[0] // random led index, without repetition
             const prevTime = nbSec
             nbSec += getRandInteger(this.MIN_BETWEEN_LED_CHANGE, this.MAX_BETWEEN_LED_CHANGE)
-            this.randomListLed.push({ledIndex:currentButton, time:prevTime, finalTime:nbSec, ledOffIndex:arrayExcludingVal(this.LED_INDEXES, currentButton)})
+            this.randomListLed.push({ledOnIndex:currentLedIndex, time:prevTime, finalTime:nbSec, ledOffIndex:arrayExcludingVal(this.LED_INDEXES, currentLedIndex)})
         }
     }
 
+    /**
+     * get the light currently switch on, and remove passed randomListLed item
+     * @return {null}
+     */
     getLightOn(){
         const now = new Date().getTime();
         let val = null;
@@ -55,7 +74,7 @@ class Game {
             for (let i = 0; i < this.randomListLed.length; i++) {
                 //console.log(this.randomListLed[i], val, this.randomListLed[i].finalTime * 1000, now - this.startTimestamp)
                 if (this.randomListLed[i].finalTime * 1000 > now - this.startTimestamp) {
-                    val = this.randomListLed[i].ledIndex
+                    val = this.randomListLed[i].ledOnIndex
                     break
                 } else {
                     this.randomListLed.shift()
@@ -66,6 +85,11 @@ class Game {
         return val
     }
 
+    /**
+     * start the game,
+     * generate a timestamp on start that will serve as reference to know how much time has passed for this game.
+     * we log text when it's end of the game using setTimeout
+     */
     start() {
         if(this.startTimestamp == null) {
             const currentDate = new Date();
@@ -75,6 +99,10 @@ class Game {
         }
     }
 
+    /**
+     * called to check if the game is ended and set isGameEnd.
+     * @return {boolean}
+     */
     isEnd() {
         const now = new Date().getTime();
         this.isGameEnd = now-this.startTimestamp >= this.duration*1000
