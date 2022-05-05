@@ -11,10 +11,11 @@ class Game {
     /**
      *
      * @param players {Array<Controller>}
-     * @param firestoreDocRef {string}
+     * @param newDocId {string}
      * @param duration {int|null|undefined}
+     * @param onEnd {Function}
      */
-    constructor(players, firestoreDocRef, duration) {
+    constructor(players, newDocId, duration, onEnd) {
         this.duration = (duration === null || duration === undefined ? 60 : duration) // in seconds
         this.currentLight = []
         this.startTimestamp = null
@@ -22,10 +23,10 @@ class Game {
         this.randomListLed = []
         this.scores = {}
         this.players = players
-        this.firestoreDocRef = firestoreDocRef
+        this.newDocId = newDocId
         this._initScores()
         this._initRandomListIndexLight()
-        this.start()
+        this.start(onEnd)
     }
     _initScores(){
         this.players.forEach(controller=>{
@@ -89,13 +90,18 @@ class Game {
      * start the game,
      * generate a timestamp on start that will serve as reference to know how much time has passed for this game.
      * we log text when it's end of the game using setTimeout
+     * @param onEnd {Function}
      */
-    start() {
+    start(onEnd) {
         if(this.startTimestamp == null) {
             const currentDate = new Date();
             this.startTimestamp = currentDate.getTime();
             console.log(this.startTimestamp)
-            setTimeout(()=>{console.log("################# END OF THE GAME #############")}, this.duration*1000)
+            setTimeout(()=>{
+                console.log("################# END OF THE GAME #############")
+                onEnd(this.getFormatedScore())
+            }, this.duration*1000)
+
         }
     }
 

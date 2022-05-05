@@ -10,9 +10,11 @@ const {Game} = require("./game");
 //region listen new party to start new game
 currGame = null
 
-const launchGameOnNewParty = (newDocRef, duration) =>{
-  currGame = new Game([puces.controller1, puces.controller2], newDocRef, duration)
-  //storage.updateParty(newDocRef, {})
+const launchGameOnNewParty = (newDocId, duration) =>{
+  const onEnd = (score) =>{
+    storage.updateParty(newDocId, score)
+  }
+  currGame = new Game([puces.controller1, puces.controller2], newDocId, duration, onEnd)
   gameStart(currGame, xbeeAPI, frames, storage)
 }
 const storeObs = (docSnapshot) =>{
@@ -22,7 +24,7 @@ const storeObs = (docSnapshot) =>{
     duration = parseInt(doc._fieldsProto.duree[doc._fieldsProto.duree.valueType])
   }catch (e){
   }
-  launchGameOnNewParty(doc.ref, duration)
+  launchGameOnNewParty(doc.id, duration)
 }
 const storageObserverParties = storage.observerParties(storeObs)
 //storageObserverParties(); // stop listening
@@ -32,12 +34,20 @@ const storageObserverParties = storage.observerParties(storeObs)
 //region init
 const C = xbee_api.constants;
 const SERIAL_PORT = process.env.SERIAL_PORT;
+const SERIAL_PORT2 = process.env.SERIAL_PORT2;
 
 let xbeeAPI = new xbee_api.XBeeAPI({
   api_mode: parseInt(process.env.API_MODE) || 1
 });
 let serialport = new SerialPort(SERIAL_PORT, {
-  baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 9600,
+  baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 115200,
+}, function (err) {
+  if (err) {
+    return console.log('Error: ', err.message)
+  }
+});
+let serialport2 = new SerialPort(SERIAL_PORT2, {
+  baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 115200,
 }, function (err) {
   if (err) {
     return console.log('Error: ', err.message)
@@ -45,7 +55,9 @@ let serialport = new SerialPort(SERIAL_PORT, {
 });
 
 serialport.pipe(xbeeAPI.parser);
+serialport2.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
+xbeeAPI.builder.pipe(serialport2);
 //endregion
 
 const players = []
@@ -59,13 +71,13 @@ serialport.on("open", function () {
   console.log("STARTED")
   xbeeAPI.builder.write(frame_obj);
 
-  frame_obj = { // AT Request to be sent
-    type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
-    destination64: "FFFFFFFFFFFFFFFF",
-    command: "NI",
-    commandParameter: [],
-  };
-  xbeeAPI.builder.write(frame_obj);
+  // frame_obj = { // AT Request to be sent
+  //   type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
+  //   destination64: "FFFFFFFFFFFFFFFF",
+  //   command: "NI",
+  //   commandParameter: [],
+  // };
+  // xbeeAPI.builder.write(frame_obj);
 
 });
 //endregion

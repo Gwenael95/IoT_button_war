@@ -52,15 +52,8 @@ resetScore = async function (){
 
 //region Parties
 updateParty = async function ( docId, playersScore) {
-  /*const scoreData = {
-    scoreJ1: scoreJ1,
-    scoreJ2: scoreJ2
-  }*/
   const docParty = docParties.doc(docId)
-  console.log(docParty)
-  //playersScore[""]
-
-  //await docParty.update(scores);
+  await docParty.update(playersScore);
 }
 
 /**
@@ -92,6 +85,7 @@ async function deleteParties(){
 //deleteParties()
 //endregion
 
+//deleteParties()
 module.exports = {
   docParties, updateScore, observerParties,
   resetScore, updateParty

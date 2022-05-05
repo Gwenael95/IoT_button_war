@@ -59,7 +59,7 @@ function whichIs0InObject(obj){
  * @param storage
  */
 function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, storage){
-    if(frame.remote64 === controller.dest64){
+    if(frame.remote64 === controller.dest64 && currGame !== null){
         const lightOn = currGame.getLightOn();
         if(lightOn === null){
             console.log("END OF THE GAME, (you should stop spamming)")
