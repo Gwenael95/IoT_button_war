@@ -1,7 +1,7 @@
 const {getDiffInArray} = require("./helpers")
 
 class Controller {
-    constructor(dest64, dest16, button0, button1, button2) {
+    constructor(dest64, dest16, button0, button1, button2, alreadyConfig) {
         this.dest64 = dest64.toLowerCase()
         this.dest16 = dest16.toLowerCase()
         this.button0 = button0
@@ -9,7 +9,7 @@ class Controller {
         this.button2 = button2
         this.setButtonList()
         this.indexLastInputChanged = null
-        this.isAutoConfig = false
+        this.isAlreadyConfig = (alreadyConfig !== null && alreadyConfig !== undefined ? alreadyConfig : false)
         this.pressedInputs = []
         this.sh = null
         this.sl = null
@@ -18,7 +18,7 @@ class Controller {
 
     setIsAutoConfig(){
         console.log("HERE CHECK IF CONFIG", this.dest64, this.dest16, this.button0, this.button1, this.button2 )
-        this.isAutoConfig = this.dest64 != null && this.dest16 != null
+        this.isAlreadyConfig = this.dest64 != null && this.dest16 != null
             && this.button0 != null && this.button1 != null && this.button2 != null
         && this.dest64 !== "" && this.dest16 !== ""
             && this.button0 !== "" && this.button1 !== "" && this.button2 !== ""

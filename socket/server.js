@@ -76,33 +76,34 @@ xbeeAPI.parser.on("data", function (frame) {
   if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
     // let dataReceived = String.fromCharCode.apply(null, frame.nodeIdentifier);
     console.log("NODE_IDENTIFICATION", frame);
-    for(let i =0; i<puces.controllerList.length; i++){
-      if (!puces.controllerList[i].isAutoConfig){
-        let shouldContinue = false
-        for(let j =0; j<puces.controllerList.length; j++) {
-          if(puces.controllerList[j].dest64 === frame.sender64 && puces.controllerList[j].isAutoConfig){
-            shouldContinue = true
-            break
+    if(puces.puceListDest64.includes(frame.sender64)) {
+      for (let i = 0; i < puces.controllerList.length; i++) {
+        if (!puces.controllerList[i].isAlreadyConfig) {
+          let shouldContinue = false
+          for (let j = 0; j < puces.controllerList.length; j++) {
+            if (puces.controllerList[j].dest64 === frame.sender64 && puces.controllerList[j].isAlreadyConfig) {
+              shouldContinue = true
+              break
+            }
           }
-        }
-        if(shouldContinue){
-          continue
-        }
+          if (shouldContinue) {
+            continue
+          }
 
-        puces.controllerList[i].setDest64(frame.sender64)
-        puces.controllerList[i].setDest16(frame.sender16)
+          puces.controllerList[i].setDest64(frame.sender64)
+          puces.controllerList[i].setDest16(frame.sender16)
 
-        /*
-        // region for autoconfig button
-        xbeeAPI.builder.write(frames.frame_d0);
-        xbeeAPI.builder.write(frames.frame_d1);
-        xbeeAPI.builder.write(frames.frame_d2);
-        xbeeAPI.builder.write(frames.frame_d3);
-        xbeeAPI.builder.write(frames.frame_d4);
-         */
+          /*
+          // region for autoconfig button
+          xbeeAPI.builder.write(frames.frame_d0);
+          xbeeAPI.builder.write(frames.frame_d1);
+          xbeeAPI.builder.write(frames.frame_d2);
+          xbeeAPI.builder.write(frames.frame_d3);
+          xbeeAPI.builder.write(frames.frame_d4);
+           */
+        }
       }
     }
-    // storage.registerSensor(frame.remote64)
 
   } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX from ", frame.remote64, "with PIN = ", frame.digitalSamples)
@@ -133,13 +134,13 @@ xbeeAPI.parser.on("data", function (frame) {
     console.log("remote AT command")
   }
   else {
-    if(!puces.controllerList[0].isAutoConfig) {
+    if(!puces.controllerList[0].isAlreadyConfig) {
       autoConfigFromFrameData(frame, 1, puces)
     }
     /*
     //remote autoconfig impossible (can't know the sender)
     for(let i =0; i<puces.controllerList.length; i++){
-      if (!puces.controllerList[i].isAutoConfig && puces.controllerList[i].dest64 == frame.){ //require to identify the sender
+      if (!puces.controllerList[i].isAlreadyConfig && puces.controllerList[i].dest64 == frame.){ //require to identify the sender
         autoConfigFromFrameData(frame, i, puces.controllerList[i] )
       }
     }*/

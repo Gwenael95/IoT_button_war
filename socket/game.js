@@ -41,9 +41,9 @@ class Game {
     getFormatedScore(){
         const data = {}
         for (let i=0; i<this.players.length ;i++){
-            console.log(this.players[i].dest64, this.players[i].isAutoConfig)
+            console.log(this.players[i].dest64, this.players[i].isAlreadyConfig)
             //if(this.players[i].dest64 !== null && this.players[i].dest64 !== "") {
-            if(this.players[i].isAutoConfig) {
+            if(this.players[i].isAlreadyConfig) {
                 data["scoreJ" + (i + 1)] = this.scores[this.players[i].dest64]
             }
         }
@@ -52,7 +52,7 @@ class Game {
     getNbPlayer(){
         let nbPlayer = 0
         for (let i=0; i<this.players.length ;i++){
-            if(this.players[i].isAutoConfig) {
+            if(this.players[i].isAlreadyConfig) {
                 nbPlayer ++
             }
         }
@@ -125,7 +125,7 @@ class Game {
     isEnd() {
         const now = new Date().getTime();
         this.isGameEnd = now-this.startTimestamp >= this.duration*1000
-        console.log("game chrono = ", now-this.startTimestamp, (this.isGameEnd ? "this is the end : " : ""), (this.isGameEnd ? this.scores : ""))
+        console.log("game chrono = ", now-this.startTimestamp, (this.isGameEnd ? "this is the end : " : ""), (this.isGameEnd ? this.getFormatedScore() : ""))
         return this.isGameEnd
     }
 }
