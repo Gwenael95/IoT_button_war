@@ -33,5 +33,5 @@ You just need to well-ordered the controller setup.
 
 ### controller zigbee config
 Each zigbee module used for controllers should send message 
-to itself to allow optimal button spam.
+to the first controller or itself to allow optimal button spam.
 
