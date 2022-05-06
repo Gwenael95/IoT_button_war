@@ -173,6 +173,7 @@ function autoConfigController(index, frames, puces){
  *
  * @param frame
  * @param index {int}
+ * @param puces
  */
 function autoConfigFromFrameData(frame, index, puces){
     console.debug("frame = ", frame);

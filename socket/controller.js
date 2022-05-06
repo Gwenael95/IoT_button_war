@@ -16,8 +16,15 @@ class Controller {
         this.potentialButton = []
     }
 
+    setIsAutoConfig(){
+        this.isAutoConfig = this.dest64 != null && this.dest16 != null
+            && this.button0 != null && this.button1 != null && this.button2 != null
+        && this.dest64 !== "" && this.dest16 !== ""
+            && this.button0 !== "" && this.button1 !== "" && this.button2 !== ""
+    }
     setButtonList(){
         this.buttonList = [ this.button0,  this.button1,  this.button2]
+        this.setIsAutoConfig()
     }
     //region setters for auto init
     addButtonInPotentialButton(newButton){
@@ -27,9 +34,6 @@ class Controller {
             this["button" + i] = this.potentialButton[i]
         }
         this.setButtonList()
-    }
-    setIsAutoConfig(isAutoConfig){
-        this.isAutoConfig = isAutoConfig
     }
     setSh(shVal){
         this.sh = shVal
@@ -42,10 +46,16 @@ class Controller {
     setDest64FromShSl(){
         if(this.sh !== null && this.sl !== null && (this.sh + this.sl).length ===  16){
             this.dest64 = this.sh + this.sl
+            this.setIsAutoConfig()
         }
+    }
+    setDest64(dest64){
+        this.dest64 = dest64
+        this.setIsAutoConfig()
     }
     setDest16(dest16){
         this.dest16 = dest16
+        this.setIsAutoConfig()
     }
     //endregion
 

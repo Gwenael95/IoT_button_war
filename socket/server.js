@@ -75,7 +75,22 @@ xbeeAPI.parser.on("data", function (frame) {
 
   if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
     // let dataReceived = String.fromCharCode.apply(null, frame.nodeIdentifier);
-    console.log("NODE_IDENTIFICATION");
+    console.log("NODE_IDENTIFICATION", frame);
+    for(let i =0; i<puces.controllerList.length; i++){
+      if (!puces.controllerList[i].isAutoConfig){
+        puces.controllerList[i].setDest64(frame.sender64)
+        puces.controllerList[i].setDest16(frame.sender16)
+
+        /*
+        // region for autoconfig button
+        xbeeAPI.builder.write(frames.frame_d0);
+        xbeeAPI.builder.write(frames.frame_d1);
+        xbeeAPI.builder.write(frames.frame_d2);
+        xbeeAPI.builder.write(frames.frame_d3);
+        xbeeAPI.builder.write(frames.frame_d4);
+         */
+      }
+    }
     // storage.registerSensor(frame.remote64)
 
   } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
@@ -83,6 +98,7 @@ xbeeAPI.parser.on("data", function (frame) {
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
 
     puces.controllerList.forEach(controller=>{
+      console.log("the controller to test", controller.dest64)
       if(controller.dest64 === frame.remote64) {
         handleControllerByFrame(controller, xbeeAPI, frame, currGame, storage)
       }
@@ -99,10 +115,23 @@ xbeeAPI.parser.on("data", function (frame) {
     // }
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
-    //console.log("REMOTE_COMMAND_RESPONSE", frame.commandData) //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
+    console.log("REMOTE_COMMAND_RESPONSE", frame) //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
+
+  }
+  else if(C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST === frame.type){
+    console.log("remote AT command")
   }
   else {
-    autoConfigFromFrameData(frame, 1, puces)
+    if(!puces.controllerList[0].isAutoConfig) {
+      autoConfigFromFrameData(frame, 1, puces)
+    }
+    /*
+    //remote autoconfig impossible (can't know the sender)
+    for(let i =0; i<puces.controllerList.length; i++){
+      if (!puces.controllerList[i].isAutoConfig && puces.controllerList[i].dest64 == frame.){ //require to identify the sender
+        autoConfigFromFrameData(frame, i, puces.controllerList[i] )
+      }
+    }*/
   }
 });
 
@@ -110,8 +139,8 @@ xbeeAPI.parser.on("data", function (frame) {
 
 
 
-//region prepare for Controller for index
-autoConfigController(2, frames, puces)
-autoConfigController(3, frames, puces)
-autoConfigController(4, frames, puces)
+//region prepare for Controller for index (if connected to same computer)
+//autoConfigController(2, frames, puces)
+//autoConfigController(3, frames, puces)
+//autoConfigController(4, frames, puces)
 //endregion
