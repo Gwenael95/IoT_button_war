@@ -1,3 +1,7 @@
+const SerialPort = require("serialport");
+const xbee_api = require("xbee-api");
+const C = xbee_api.constants;
+
 function getRandInteger(min, max) {
     return Math.floor(Math.random() * (max - min + 1) ) + min;
 }
@@ -117,6 +121,126 @@ function gameStart(currGame, xbeeAPI, frames, storage){
         setTimeout(func, el.time*1000)
     }
 }
+
+//region autoconfig controllers
+function autoConfigController(index, frames, puces){
+    const SERIAL_PORT2 = process.env["SERIAL_PORT" + index];
+    let hasErrorOccured = false
+    let serialport2 = new SerialPort(SERIAL_PORT2, {
+        baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 115200,
+    }, function (err) {
+        if (err) {
+            hasErrorOccured = true
+            return console.log('Error: ', err.message)
+        }
+    });
+    if(!hasErrorOccured) {
+        let xbeeAPI2 = new xbee_api.XBeeAPI({
+            api_mode: parseInt(process.env.API_MODE) || 1
+        });
+        serialport2.pipe(xbeeAPI2.parser);
+        xbeeAPI2.builder.pipe(serialport2);
+
+        onOpenPort2 = () => {
+            xbeeAPI2.builder.write(frames.frame_name);
+            xbeeAPI2.builder.write(frames.frame_sh);
+            xbeeAPI2.builder.write(frames.frame_sl);
+            xbeeAPI2.builder.write(frames.frame_net_addr);
+
+            //to init buttons automatically
+            xbeeAPI2.builder.write(frames.frame_d0);
+            xbeeAPI2.builder.write(frames.frame_d1);
+            xbeeAPI2.builder.write(frames.frame_d2);
+            xbeeAPI2.builder.write(frames.frame_d3);
+            xbeeAPI2.builder.write(frames.frame_d4);
+        }
+        serialport2.on("open", onOpenPort2);
+
+
+        xbeeAPI2.parser.on("data", function (frame) {
+            console.log("PORT", index, "RECEIVE DATA")
+            if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
+            } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
+            } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
+            } else {
+                autoConfigFromFrameData(frame, index, puces)
+            }
+        })
+    }
+}
+
+/**
+ *
+ * @param frame
+ * @param index {int}
+ */
+function autoConfigFromFrameData(frame, index, puces){
+    console.debug("frame = ", frame);
+    if(frame.command === "SH"){
+        const sh = frame.commandData.toString("hex")
+        puces["controller" + index].setSh(sh)
+        console.log(puces["controller" + index].dest64)
+    }
+    else if(frame.command === "SL"){
+        const sl = frame.commandData.toString("hex")
+        puces["controller" + index].setSl(sl)
+        console.log(puces["controller" + index].dest64)
+    }
+    else if(frame.command === "MY"){
+        const my = frame.commandData.toString("hex")
+        puces["controller" + index].setDest16(my)
+        console.log(puces["controller" + index].dest16)
+    }
+    else if(frame.command === "D0" || frame.command === "D1" || frame.command === "D2"
+        || frame.command === "D3" || frame.command === "D4"){
+        const dVal = frame.commandData.toString("hex")
+        if(dVal === "03"){
+            const pin = frame.command.replace("D", "DIO")
+            puces["controller" + index].addButtonInPotentialButton(pin)
+            console.log("HERE CONTROLLERS", puces["controller" + index].potentialButton)
+        }
+    }
+    else{
+        let dataReceived = String.fromCharCode.apply(null, frame.commandData)
+        console.log("data received = ", dataReceived);
+    }
+}
+//endregion
+
+// region main xbee action
+onOpenPortMain = (xbeeAPI, frames) =>{
+    xbeeAPI.builder.write(frames.frame_name);
+    xbeeAPI.builder.write(frames.frame_sh);
+    xbeeAPI.builder.write(frames.frame_sl);
+    xbeeAPI.builder.write(frames.frame_net_addr);
+
+    //region to init buttons automatically
+    xbeeAPI.builder.write(frames.frame_d0);
+    xbeeAPI.builder.write(frames.frame_d1);
+    xbeeAPI.builder.write(frames.frame_d2);
+    xbeeAPI.builder.write(frames.frame_d3);
+    xbeeAPI.builder.write(frames.frame_d4);
+    //endregion
+
+    //region launch a sequence of frame to test LED on start
+    xbeeAPI.builder.write(frames.ledOff_0);
+    xbeeAPI.builder.write(frames.ledOff_1);
+    xbeeAPI.builder.write(frames.ledOff_2);
+
+    const sequence = [
+        frames.ledOn_0,
+        frames.ledOn_1,
+        frames.ledOn_2,
+        frames.ledOff_0,
+        frames.ledOff_1,
+        frames.ledOff_2,
+    ]
+    for (let i=0; i<sequence.length ;i++){
+        setTimeout(()=>{}, 500*(i+1))
+    }
+    //endregion
+}
+//endregion
 //endregion
 
 //region deprecated, not useful anymore
@@ -138,4 +262,6 @@ module.exports = { objectContainsKeys, whichIs0InObject,
     handleControllerByFrame, getRandInteger,
     getDiffInArray, shuffleArray,
     getInterInArray, arrayExcludingVal,
-    gameStart};
+    gameStart,
+    autoConfigFromFrameData, autoConfigController, onOpenPortMain
+};
