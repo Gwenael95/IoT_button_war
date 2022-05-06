@@ -237,7 +237,7 @@ onOpenPortMain = (xbeeAPI, frames) =>{
         frames.ledOff_2,
     ]
     for (let i=0; i<sequence.length ;i++){
-        setTimeout(()=>{}, 500*(i+1))
+        setTimeout(()=>{ xbeeAPI.builder.write(sequence[i]);}, 200*(i+1))
     }
     //endregion
 }
