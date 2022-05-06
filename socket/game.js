@@ -41,9 +41,22 @@ class Game {
     getFormatedScore(){
         const data = {}
         for (let i=0; i<this.players.length ;i++){
-            data["scoreJ" + (i+1)] = this.scores[this.players[i].dest64]
+            console.log(this.players[i].dest64, this.players[i].isAutoConfig)
+            //if(this.players[i].dest64 !== null && this.players[i].dest64 !== "") {
+            if(this.players[i].isAutoConfig) {
+                data["scoreJ" + (i + 1)] = this.scores[this.players[i].dest64]
+            }
         }
         return data
+    }
+    getNbPlayer(){
+        let nbPlayer = 0
+        for (let i=0; i<this.players.length ;i++){
+            if(this.players[i].isAutoConfig) {
+                nbPlayer ++
+            }
+        }
+        return nbPlayer
     }
 
     /**

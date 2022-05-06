@@ -10,6 +10,7 @@ const docScore = db.collection('Score')
 const docIdScore = getMaindocIdScore()
 const docParties = db.collection('Partie');
 
+
 //region Scores
 /**
  * use to get the 'score' collection's doc id from firebase
@@ -40,11 +41,12 @@ updateScore = async function ( scores) {
 
   await docScore.doc(await docIdScore).update(scores);
 }
-resetScore = async function (){
+resetScore = async function (nbPLayer){
   const scoreData = {
-    scoreJ1: 0,
-    scoreJ2: 0,
-    scoreJ3: 0,
+    nbPlayer: nbPLayer
+  }
+  for (let i= 0; i<nbPLayer; i++){
+    scoreData["scoreJ" + (i+1)] = 0 //FieldValue.delete(), // required @google-cloud/firestore
   }
   await updateScore(scoreData)
 }

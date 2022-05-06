@@ -97,7 +97,7 @@ function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, storage)
  * @param storage
  */
 function gameStart(currGame, xbeeAPI, frames, storage){
-    storage.resetScore()
+    storage.resetScore(currGame.getNbPlayer())
     for(let i=0; i<currGame.randomListLed.length ;i++){
         const el = currGame.randomListLed[i]
         console.log(el)

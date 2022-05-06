@@ -61,7 +61,7 @@ serialport.on("open", ()=>{onOpenPortMain(xbeeAPI, frames)});
 
 //region main parser
 xbeeAPI.parser.on("data", function (frame) {
-  console.log("PORT 1 RECEIVE DATA")
+  console.log("PORT 1 RECEIVE DATA", frame)
 
   //on new device is joined, register it
 
@@ -78,6 +78,17 @@ xbeeAPI.parser.on("data", function (frame) {
     console.log("NODE_IDENTIFICATION", frame);
     for(let i =0; i<puces.controllerList.length; i++){
       if (!puces.controllerList[i].isAutoConfig){
+        let shouldContinue = false
+        for(let j =0; j<puces.controllerList.length; j++) {
+          if(puces.controllerList[j].dest64 === frame.sender64 && puces.controllerList[j].isAutoConfig){
+            shouldContinue = true
+            break
+          }
+        }
+        if(shouldContinue){
+          continue
+        }
+
         puces.controllerList[i].setDest64(frame.sender64)
         puces.controllerList[i].setDest16(frame.sender16)
 
@@ -98,7 +109,7 @@ xbeeAPI.parser.on("data", function (frame) {
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
 
     puces.controllerList.forEach(controller=>{
-      console.log("the controller to test", controller.dest64)
+      //console.log("the controller to test", controller.dest64)
       if(controller.dest64 === frame.remote64) {
         handleControllerByFrame(controller, xbeeAPI, frame, currGame, storage)
       }
@@ -115,7 +126,7 @@ xbeeAPI.parser.on("data", function (frame) {
     // }
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
-    console.log("REMOTE_COMMAND_RESPONSE", frame) //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
+    //console.log("REMOTE_COMMAND_RESPONSE") //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
 
   }
   else if(C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST === frame.type){

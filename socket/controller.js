@@ -17,6 +17,7 @@ class Controller {
     }
 
     setIsAutoConfig(){
+        console.log("HERE CHECK IF CONFIG", this.dest64, this.dest16, this.button0, this.button1, this.button2 )
         this.isAutoConfig = this.dest64 != null && this.dest16 != null
             && this.button0 != null && this.button1 != null && this.button2 != null
         && this.dest64 !== "" && this.dest16 !== ""
