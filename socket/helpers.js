@@ -41,7 +41,7 @@ const shuffleArray = array => {
  * @param obj
  * @return {*[]}
  */
-function whichIs0InObject(obj){
+function getListEquals0InObject(obj){
     const objKeys = Object.keys(obj);
     let pressedArr = [];
 
@@ -64,27 +64,24 @@ function whichIs0InObject(obj){
  */
 function handleControllerByFrame(controller, xbeeAPI,  frame, currGame, storage){
     if(frame.remote64 === controller.dest64 && currGame !== null){
-        const lightOn = currGame.getLightOn();
-        if(lightOn === null){
+        if(currGame.isEnd()){
             console.log("END OF THE GAME, (you should stop spamming)")
             return null
         }
+        const lightOn = currGame.getLightOn();
 
         //region get the last button clicked
-        const keysPressed = whichIs0InObject(frame.digitalSamples);
+        const keysPressed = getListEquals0InObject(frame.digitalSamples);
         const inputChanged = controller.whichButtonJustChange(keysPressed) // it doesn't regard if is pressed or unpressed
         controller.setPressed(keysPressed)
         console.log("KEY changing = ", inputChanged)
         //endregion
 
         if(frame.digitalSamples[inputChanged] === 0){ // if the button is pressed
-            //console.log(inputChanged, "is pressed", controller.indexLastInputChanged, " current light on=", lightOn, " --- last changed = ", controller.indexLastInputChanged)
             console.log("light on=", lightOn)
-            let playerScore = currGame.setScore(controller, lightOn === controller.indexLastInputChanged)
-            //storage.updateScore( playerScore, 30)
+            currGame.setScore(controller, lightOn === controller.indexLastInputChanged)
             storage.updateScore( currGame.getFormatedScore())
-
-            //xbeeAPI.builder.write(frames["isLedOn_" + controller.indexLastInputChanged]) // is that usefull to check if switch on, could be saved in var
+            //xbeeAPI.builder.write(frames["isLedOn_" + controller.indexLastInputChanged]) // is that usefull to check if switch on, could be saved in var to be faster
         }
     }
 }
@@ -101,6 +98,7 @@ function gameStart(currGame, xbeeAPI, frames, storage){
     for(let i=0; i<currGame.randomListLed.length ;i++){
         const el = currGame.randomListLed[i]
         console.log(el)
+        // region the frame to send at end
         if(el.time > currGame.duration){
             const func = () => {
                 currGame.LED_INDEXES.forEach(buttonId=>{
@@ -108,9 +106,9 @@ function gameStart(currGame, xbeeAPI, frames, storage){
                 })
             }
             setTimeout(func, currGame.duration*1000)
-
             break
         }
+        // endregion
 
         const func = () => {
             xbeeAPI.builder.write(frames["ledOn_" + el.ledOnIndex])
@@ -123,6 +121,12 @@ function gameStart(currGame, xbeeAPI, frames, storage){
 }
 
 //region autoconfig controllers
+/**
+ * Only used if controller are connected to the computer launching server
+ * @param index
+ * @param frames
+ * @param puces
+ */
 function autoConfigController(index, frames, puces){
     const SERIAL_PORT2 = process.env["SERIAL_PORT" + index];
     let hasErrorOccured = false
@@ -176,7 +180,7 @@ function autoConfigController(index, frames, puces){
  * @param puces
  */
 function autoConfigFromFrameData(frame, index, puces){
-    console.debug("frame = ", frame);
+    //region to construct dest64 value
     if(frame.command === "SH"){
         const sh = frame.commandData.toString("hex")
         puces["controller" + index].setSh(sh)
@@ -187,11 +191,13 @@ function autoConfigFromFrameData(frame, index, puces){
         puces["controller" + index].setSl(sl)
         console.log(puces["controller" + index].dest64)
     }
+    //endregion
     else if(frame.command === "MY"){
         const my = frame.commandData.toString("hex")
         puces["controller" + index].setDest16(my)
         console.log(puces["controller" + index].dest16)
     }
+    //region to assign the button in order automatically per controller
     else if(frame.command === "D0" || frame.command === "D1" || frame.command === "D2"
         || frame.command === "D3" || frame.command === "D4"){
         const dVal = frame.commandData.toString("hex")
@@ -201,6 +207,7 @@ function autoConfigFromFrameData(frame, index, puces){
             console.log("HERE CONTROLLERS", puces["controller" + index].potentialButton)
         }
     }
+    //endregion
     else{
         let dataReceived = String.fromCharCode.apply(null, frame.commandData)
         console.log("data received = ", dataReceived);
@@ -215,7 +222,7 @@ onOpenPortMain = (xbeeAPI, frames) =>{
     xbeeAPI.builder.write(frames.frame_sl);
     xbeeAPI.builder.write(frames.frame_net_addr);
 
-    //region to init buttons automatically
+    //region to init buttons automatically for main controller
     xbeeAPI.builder.write(frames.frame_d0);
     xbeeAPI.builder.write(frames.frame_d1);
     xbeeAPI.builder.write(frames.frame_d2);
@@ -244,25 +251,9 @@ onOpenPortMain = (xbeeAPI, frames) =>{
 //endregion
 //endregion
 
-//region deprecated, not useful anymore
-
-function getInterInArray(arr1, arr2){
-    return arr1.filter(x => arr2.includes(x));
-}
-
-function objectContainsKeys(obj, keys){
-    const objKeys = Object.keys(obj);
-    let boolArr = [];
-    keys.forEach(el=>{
-        boolArr = [objKeys.includes(el)]
-    })
-    return !boolArr.includes(false)
-}
-//endregion
-module.exports = { objectContainsKeys, whichIs0InObject,
-    handleControllerByFrame, getRandInteger,
-    getDiffInArray, shuffleArray,
-    getInterInArray, arrayExcludingVal,
+module.exports = {
+    getListEquals0InObject, handleControllerByFrame, getRandInteger,
+    getDiffInArray, shuffleArray, arrayExcludingVal,
     gameStart,
     autoConfigFromFrameData, autoConfigController, onOpenPortMain
 };

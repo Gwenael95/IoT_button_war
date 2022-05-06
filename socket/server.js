@@ -63,16 +63,8 @@ serialport.on("open", ()=>{onOpenPortMain(xbeeAPI, frames)});
 xbeeAPI.parser.on("data", function (frame) {
   console.log("PORT 1 RECEIVE DATA", frame)
 
-  //on new device is joined, register it
-
-  //on packet received, dispatch event
-  //let dataReceived = String.fromCharCode.apply(null, frame.data);
-  if (C.FRAME_TYPE.ZIGBEE_RECEIVE_PACKET === frame.type) {
-    console.log("C.FRAME_TYPE.ZIGBEE_RECEIVE_PACKET");
-    let dataReceived = String.fromCharCode.apply(null, frame.data);
-    console.log(">> ZIGBEE_RECEIVE_PACKET >", dataReceived);
-  }
-
+  //@todo : check if there is a way to know when a device is left the network
+  //@todo : check if there is a way to know which device send the data (ex with D0, D1, NI, SH, SL...)
   if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
     // let dataReceived = String.fromCharCode.apply(null, frame.nodeIdentifier);
     console.log("NODE_IDENTIFICATION", frame);
@@ -94,7 +86,7 @@ xbeeAPI.parser.on("data", function (frame) {
           puces.controllerList[i].setDest16(frame.sender16)
 
           /*
-          // region for autoconfig button
+          // frames to autoconfig button on controller; but need to know the sender
           xbeeAPI.builder.write(frames.frame_d0);
           xbeeAPI.builder.write(frames.frame_d1);
           xbeeAPI.builder.write(frames.frame_d2);
@@ -107,31 +99,14 @@ xbeeAPI.parser.on("data", function (frame) {
 
   } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX from ", frame.remote64, "with PIN = ", frame.digitalSamples)
-    //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
-
     puces.controllerList.forEach(controller=>{
-      //console.log("the controller to test", controller.dest64)
       if(controller.dest64 === frame.remote64) {
         handleControllerByFrame(controller, xbeeAPI, frame, currGame, storage)
       }
     })
-
-    // //US 4 lessons iot
-    // if(frame.digitalSamples.DIO3 === 0){
-    //   console.log("frame on")
-    //   xbeeAPI.builder.write(frames.ledOn_3)
-    // }
-    // else{
-    //   console.log("frame off")
-    //   xbeeAPI.builder.write(frames.ledOff_1)
-    // }
-
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
+    // how can i get the sender MAC address
     //console.log("REMOTE_COMMAND_RESPONSE") //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
-
-  }
-  else if(C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST === frame.type){
-    console.log("remote AT command")
   }
   else {
     if(!puces.controllerList[0].isAlreadyConfig) {
