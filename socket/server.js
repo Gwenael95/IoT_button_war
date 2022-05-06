@@ -5,7 +5,7 @@ let storage = require("./storage")
 require('dotenv').config()
 const frames = require("./frames");
 const puces = require("./puce_zigbee");
-const {handleControllerByFrame, gameStart} = require("./helpers");
+const {handleControllerByFrame, gameStart ,autoConfigController, autoConfigFromFrameData, onOpenPortMain} = require("./helpers");
 const {Game} = require("./game");
 //endregion
 
@@ -48,27 +48,14 @@ let serialport = new SerialPort(SERIAL_PORT, {
     return console.log('Error: ', err.message)
   }
 });
-
 serialport.pipe(xbeeAPI.parser);
 xbeeAPI.builder.pipe(serialport);
+
+//on start server, send some xbee command
+serialport.on("open", ()=>{onOpenPortMain(xbeeAPI, frames)});
 //endregion
 
-//region on start server
-onOpenPort = () =>{
-  xbeeAPI.builder.write(frames.frame_name);
-  xbeeAPI.builder.write(frames.frame_sh);
-  xbeeAPI.builder.write(frames.frame_sl);
-  xbeeAPI.builder.write(frames.frame_net_addr);
 
-  //to init buttons automatically
-  xbeeAPI.builder.write(frames.frame_d0);
-  xbeeAPI.builder.write(frames.frame_d1);
-  xbeeAPI.builder.write(frames.frame_d2);
-  xbeeAPI.builder.write(frames.frame_d3);
-  xbeeAPI.builder.write(frames.frame_d4);
-}
-serialport.on("open", onOpenPort);
-//endregion
 
 // All frames parsed by the XBee will be emitted here
 
@@ -96,7 +83,9 @@ xbeeAPI.parser.on("data", function (frame) {
     //storage.registerSample(frame.remote64,frame.analogSamples.AD0 )
 
     puces.controllerList.forEach(controller=>{
-      handleControllerByFrame(controller, xbeeAPI, frame, currGame, storage)
+      if(controller.dest64 === frame.remote64) {
+        handleControllerByFrame(controller, xbeeAPI, frame, currGame, storage)
+      }
     })
 
     // //US 4 lessons iot
@@ -113,96 +102,16 @@ xbeeAPI.parser.on("data", function (frame) {
     //console.log("REMOTE_COMMAND_RESPONSE", frame.commandData) //if light off : commandData = <Buffer 00> , else if on  : commandData = <Buffer 05>
   }
   else {
-    autoConfigFromFrameData(frame, 1)
+    autoConfigFromFrameData(frame, 1, puces)
   }
 });
 
-//region autoconfig from frame
-/**
- *
- * @param frame
- * @param index {int}
- */
-function autoConfigFromFrameData(frame, index){
-  console.debug("frame = ", frame);
-  if(frame.command === "SH"){
-    const sh = frame.commandData.toString("hex")
-    puces["controller" + index].setSh(sh)
-    console.log(puces["controller" + index].dest64)
-  }
-  else if(frame.command === "SL"){
-    const sl = frame.commandData.toString("hex")
-    puces["controller" + index].setSl(sl)
-    console.log(puces["controller" + index].dest64)
-  }
-  else if(frame.command === "MY"){
-    const my = frame.commandData.toString("hex")
-    puces["controller" + index].setDest16(my)
-    console.log(puces["controller" + index].dest16)
-  }
-  else if(frame.command === "D0" || frame.command === "D1" || frame.command === "D2"
-      || frame.command === "D3" || frame.command === "D4"){
-    const dVal = frame.commandData.toString("hex")
-    if(dVal === "03"){
-      const pin = frame.command.replace("D", "DIO")
-      puces["controller" + index].addButtonInPotentialButton(pin)
-      console.log("HERE CONTROLLERS", puces["controller" + index].potentialButton)
-    }
-  }
-  else{
-    let dataReceived = String.fromCharCode.apply(null, frame.commandData)
-    console.log("data received = ", dataReceived);
-  }
-}
-//endregion
 //endregion
 
 
 
 //region prepare for Controller for index
-function autoConfigController(index){
-  const SERIAL_PORT2 = process.env["SERIAL_PORT" + index];
-  let xbeeAPI2 = new xbee_api.XBeeAPI({
-    api_mode: parseInt(process.env.API_MODE) || 1
-  });
-  let serialport2 = new SerialPort(SERIAL_PORT2, {
-    baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 115200,
-  }, function (err) {
-    if (err) {
-      return console.log('Error: ', err.message)
-    }
-  });
-  serialport2.pipe(xbeeAPI2.parser);
-  xbeeAPI2.builder.pipe(serialport2);
-
-  onOpenPort2 = () => {
-    xbeeAPI2.builder.write(frames.frame_name);
-    xbeeAPI2.builder.write(frames.frame_sh);
-    xbeeAPI2.builder.write(frames.frame_sl);
-    xbeeAPI2.builder.write(frames.frame_net_addr);
-
-    //to init buttons automatically
-    xbeeAPI2.builder.write(frames.frame_d0);
-    xbeeAPI2.builder.write(frames.frame_d1);
-    xbeeAPI2.builder.write(frames.frame_d2);
-    xbeeAPI2.builder.write(frames.frame_d3);
-    xbeeAPI2.builder.write(frames.frame_d4);
-  }
-  serialport2.on("open", onOpenPort2);
-
-
-  xbeeAPI2.parser.on("data", function(frame){
-    console.log("PORT", index, "RECEIVE DATA")
-    if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
-    } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
-    } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
-    }
-    else {
-      autoConfigFromFrameData(frame, index)
-    }
-  })
-}
-autoConfigController(2)
-autoConfigController(3)
-autoConfigController(4)
+autoConfigController(2, frames, puces)
+autoConfigController(3, frames, puces)
+autoConfigController(4, frames, puces)
 //endregion
